@@ -1,0 +1,7 @@
+# Created by .ignore support plugin (hsz.mobi)
+
+# Pycharm file
+.idea/*
+
+# Data file
+*.csv
