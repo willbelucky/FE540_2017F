@@ -6,6 +6,8 @@
 from datetime import datetime
 
 import pandas as pd
+from pandas import DataFrame
+from typing import List
 
 idx = pd.IndexSlice
 
@@ -22,7 +24,7 @@ CACHE = {
 }
 
 
-def _get_stock_master_table():
+def _get_stock_master_table() -> DataFrame or None:
     """
 
     :return stock_masters: (DataFrame)
@@ -32,10 +34,11 @@ def _get_stock_master_table():
     if CACHE[STOCK_MASTER_TABLE] is None:
         CACHE[STOCK_MASTER_TABLE] = pd.read_csv(STOCK_MASTER_TABLE, index_col=['code'], low_memory=False)
     stock_masters = CACHE[STOCK_MASTER_TABLE]
+    assert stock_masters is not None
     return stock_masters
 
 
-def _get_stock_price_table():
+def _get_stock_price_table() -> DataFrame or None:
     """
 
     :return stock_prices: (DataFrame)
@@ -59,10 +62,11 @@ def _get_stock_price_table():
         CACHE[STOCK_PRICE_TABLE]['adj_open'] = \
             CACHE[STOCK_PRICE_TABLE]['adj_close'] / CACHE[STOCK_PRICE_TABLE]['close'] * CACHE[STOCK_PRICE_TABLE]['open']
     stock_prices = CACHE[STOCK_PRICE_TABLE]
+    assert stock_prices is not None
     return stock_prices
 
 
-def _get_naver_finance_forum_table():
+def _get_naver_finance_forum_table() -> DataFrame or None:
     """
 
     :return naver_finance_forums: (DataFrame)
@@ -79,10 +83,11 @@ def _get_naver_finance_forum_table():
         CACHE[NAVER_FINANCE_FORUM_TABLE] = pd.read_csv(NAVER_FINANCE_FORUM_TABLE, index_col=['code', 'date', 'writer'],
                                                        parse_dates=['date'], low_memory=False)
     naver_finance_forums = CACHE[NAVER_FINANCE_FORUM_TABLE]
+    assert naver_finance_forums is not None
     return naver_finance_forums
 
 
-def _get_naver_finance_forum_stat_table():
+def _get_naver_finance_forum_stat_table() -> DataFrame or None:
     """
 
     :return naver_finance_forum_stats: (DataFrame)
@@ -94,10 +99,11 @@ def _get_naver_finance_forum_stat_table():
         CACHE[NAVER_FINANCE_FORUM_STAT_TABLE] = pd.read_csv(NAVER_FINANCE_FORUM_STAT_TABLE, index_col=['code', 'date'],
                                                             parse_dates=['date'], low_memory=False).sort_index()
     naver_finance_forum_stats = CACHE[NAVER_FINANCE_FORUM_STAT_TABLE]
+    assert naver_finance_forum_stats is not None
     return naver_finance_forum_stats
 
 
-def get_all_stock_masters():
+def get_all_stock_masters() -> DataFrame or None:
     """
 
     :return stock_masters: (DataFrame)
@@ -105,10 +111,11 @@ def get_all_stock_masters():
         column  name    | (str) The name of the company.
     """
     stock_masters = _get_stock_master_table()
+    assert stock_masters is not None
     return stock_masters
 
 
-def get_stock_master(code):
+def get_stock_master(code: str) -> DataFrame:
     """
 
     :param code: (str) 6 digits number string representing a company.
@@ -122,7 +129,7 @@ def get_stock_master(code):
     return stock_masters
 
 
-def get_stock_masters(codes):
+def get_stock_masters(codes: List[str]) -> DataFrame:
     """
 
     :param codes: ([str]) 6 digits number strings representing companies.
@@ -136,7 +143,7 @@ def get_stock_masters(codes):
     return stock_masters
 
 
-def get_stock_prices(stock_masters):
+def get_stock_prices(stock_masters: DataFrame) -> DataFrame:
     """
 
     :param stock_masters: (DataFrame)
@@ -161,7 +168,7 @@ def get_stock_prices(stock_masters):
     return stock_prices
 
 
-def get_naver_finance_forums(stock_masters, from_date, to_date):
+def get_naver_finance_forums(stock_masters: DataFrame, from_date: datetime, to_date: datetime) -> DataFrame:
     """
 
     :param stock_masters: (DataFrame)
@@ -186,7 +193,7 @@ def get_naver_finance_forums(stock_masters, from_date, to_date):
     return naver_finance_forums
 
 
-def get_naver_finance_forum_stats(stock_masters, from_date, to_date):
+def get_naver_finance_forum_stats(stock_masters: DataFrame, from_date: datetime, to_date: datetime) -> DataFrame:
     """
 
     :param stock_masters: (DataFrame)
