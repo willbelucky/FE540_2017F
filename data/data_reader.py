@@ -8,13 +8,15 @@ from datetime import datetime
 import pandas as pd
 from pandas import DataFrame
 from typing import List
+from pathlib import Path
+import os
 
 idx = pd.IndexSlice
 
-STOCK_MASTER_TABLE = 'stock_master.csv'
-STOCK_PRICE_TABLE = 'stock_price.csv'
-NAVER_FINANCE_FORUM_TABLE = 'naver_finance_forum.csv'
-NAVER_FINANCE_FORUM_STAT_TABLE = 'naver_finance_forum_stat.csv'
+STOCK_MASTER_TABLE = 'stock_master'
+STOCK_PRICE_TABLE = 'stock_price'
+NAVER_FINANCE_FORUM_TABLE = 'naver_finance_forum'
+NAVER_FINANCE_FORUM_STAT_TABLE = 'naver_finance_forum_stat'
 
 CACHE = {
     STOCK_MASTER_TABLE: None,
@@ -22,6 +24,48 @@ CACHE = {
     NAVER_FINANCE_FORUM_TABLE: None,
     NAVER_FINANCE_FORUM_STAT_TABLE: None
 }
+
+# Set your working directory FE540_2017F.
+# For example, /Users/willbe/PycharmProjects/FE540_2017F
+DATA_DIR = os.getcwd().replace(chr(92), '/') + '/data/'
+
+
+def get_cached_table(table_name: str, index=None, parse_dates=None) -> DataFrame or None:
+    """
+
+    :param table_name: (str)
+    :param index: (None or list[str])
+    :param parse_dates: (None or list[str])
+    :return cached_table: (DataFrame)
+    """
+    hdf_file = table_name + '.h5'
+    csv_file = table_name + '.csv'
+    if CACHE[table_name] is None:
+        # Read h5 raw data file.
+        if Path(DATA_DIR + hdf_file).exists():
+            CACHE[table_name] = pd.read_hdf(DATA_DIR + hdf_file, 'table')
+            if parse_dates is not None:
+                for parse_date in parse_dates:
+                    CACHE[table_name][parse_date] = pd.to_datetime(CACHE[table_name][parse_date])
+        # If there is no h5 file, read excel raw data file.
+        else:
+            CACHE[table_name] = pd.read_csv(DATA_DIR + csv_file,
+                                            parse_dates=parse_dates, low_memory=False)
+            CACHE[table_name].to_hdf(hdf_file, 'table')
+            print('Create {}'.format(hdf_file))
+
+        if index is not None:
+            CACHE[table_name] = CACHE[table_name].set_index(index)
+
+        if table_name == STOCK_PRICE_TABLE:
+            CACHE[STOCK_PRICE_TABLE]['adj_close'] = CACHE[STOCK_PRICE_TABLE]['market_capitalization'] / \
+                                                    CACHE[STOCK_PRICE_TABLE]['listed_stocks_number']
+            CACHE[STOCK_PRICE_TABLE]['adj_open'] = CACHE[STOCK_PRICE_TABLE]['adj_close'] / CACHE[STOCK_PRICE_TABLE][
+                'close'] * CACHE[STOCK_PRICE_TABLE]['open']
+
+    cached_table = CACHE[table_name]
+
+    return cached_table
 
 
 def _get_stock_master_table() -> DataFrame or None:
@@ -31,10 +75,7 @@ def _get_stock_master_table() -> DataFrame or None:
         index   code    | (str) 6 digits number string representing a company.
         column  name    | (str) The name of the company.
     """
-    if CACHE[STOCK_MASTER_TABLE] is None:
-        CACHE[STOCK_MASTER_TABLE] = pd.read_csv(STOCK_MASTER_TABLE, index_col=['code'], low_memory=False)
-    stock_masters = CACHE[STOCK_MASTER_TABLE]
-    assert stock_masters is not None
+    stock_masters = get_cached_table(STOCK_MASTER_TABLE, index=['code'])
     return stock_masters
 
 
@@ -54,15 +95,7 @@ def _get_stock_price_table() -> DataFrame or None:
                 adj_close               | (float) The adjusted close price.
                 adj_open                | (float) The adjusted open price.
     """
-    if CACHE[STOCK_PRICE_TABLE] is None:
-        CACHE[STOCK_PRICE_TABLE] = pd.read_csv(STOCK_PRICE_TABLE, index_col=['code', 'date'], parse_dates=['date'],
-                                               low_memory=False)
-        CACHE[STOCK_PRICE_TABLE]['adj_close'] = \
-            CACHE[STOCK_PRICE_TABLE]['market_capitalization'] / CACHE[STOCK_PRICE_TABLE]['listed_stocks_number']
-        CACHE[STOCK_PRICE_TABLE]['adj_open'] = \
-            CACHE[STOCK_PRICE_TABLE]['adj_close'] / CACHE[STOCK_PRICE_TABLE]['close'] * CACHE[STOCK_PRICE_TABLE]['open']
-    stock_prices = CACHE[STOCK_PRICE_TABLE]
-    assert stock_prices is not None
+    stock_prices = get_cached_table(STOCK_PRICE_TABLE, index=['code', 'date'], parse_dates=['date'])
     return stock_prices
 
 
@@ -79,11 +112,8 @@ def _get_naver_finance_forum_table() -> DataFrame or None:
                 agreement       | (int) The number of agreements.
                 disagreement    | (int) The number of disagreements.
     """
-    if CACHE[NAVER_FINANCE_FORUM_TABLE] is None:
-        CACHE[NAVER_FINANCE_FORUM_TABLE] = pd.read_csv(NAVER_FINANCE_FORUM_TABLE, index_col=['code', 'date', 'writer'],
-                                                       parse_dates=['date'], low_memory=False)
-    naver_finance_forums = CACHE[NAVER_FINANCE_FORUM_TABLE]
-    assert naver_finance_forums is not None
+    naver_finance_forums = get_cached_table(NAVER_FINANCE_FORUM_TABLE, index=['code', 'date', 'writer'],
+                                            parse_dates=['date'])
     return naver_finance_forums
 
 
@@ -95,11 +125,8 @@ def _get_naver_finance_forum_stat_table() -> DataFrame or None:
                 date    | (datetime) The created date.
         column  count   | (int) The number of posts.
     """
-    if CACHE[NAVER_FINANCE_FORUM_STAT_TABLE] is None:
-        CACHE[NAVER_FINANCE_FORUM_STAT_TABLE] = pd.read_csv(NAVER_FINANCE_FORUM_STAT_TABLE, index_col=['code', 'date'],
-                                                            parse_dates=['date'], low_memory=False).sort_index()
-    naver_finance_forum_stats = CACHE[NAVER_FINANCE_FORUM_STAT_TABLE]
-    assert naver_finance_forum_stats is not None
+    naver_finance_forum_stats = get_cached_table(NAVER_FINANCE_FORUM_STAT_TABLE, index=['code', 'date'],
+                                                 parse_dates=['date'])
     return naver_finance_forum_stats
 
 
@@ -168,7 +195,8 @@ def get_stock_prices(stock_masters: DataFrame) -> DataFrame:
     return stock_prices
 
 
-def get_naver_finance_forums(stock_masters: DataFrame, from_date: datetime, to_date: datetime) -> DataFrame:
+def get_naver_finance_forums(stock_masters: DataFrame, from_date: datetime = datetime(2016, 10, 31),
+                             to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
     """
 
     :param stock_masters: (DataFrame)
