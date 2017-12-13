@@ -17,12 +17,14 @@ STOCK_MASTER_TABLE = 'stock_master'
 STOCK_PRICE_TABLE = 'stock_price'
 NAVER_FINANCE_FORUM_TABLE = 'naver_finance_forum'
 NAVER_FINANCE_FORUM_STAT_TABLE = 'naver_finance_forum_stat'
+WORD_PACK = 'word_pack'
 
 CACHE = {
     STOCK_MASTER_TABLE: None,
     STOCK_PRICE_TABLE: None,
     NAVER_FINANCE_FORUM_TABLE: None,
-    NAVER_FINANCE_FORUM_STAT_TABLE: None
+    NAVER_FINANCE_FORUM_STAT_TABLE: None,
+    WORD_PACK: None,
 }
 
 # Set your working directory FE540_2017F.
@@ -51,8 +53,8 @@ def get_cached_table(table_name: str, index=None, parse_dates=None) -> DataFrame
         else:
             CACHE[table_name] = pd.read_csv(DATA_DIR + csv_file,
                                             parse_dates=parse_dates, low_memory=False)
-            CACHE[table_name].to_hdf(hdf_file, 'table')
-            print('Create {}'.format(hdf_file))
+            CACHE[table_name].to_hdf(DATA_DIR + hdf_file, 'table')
+            print('Create {}'.format(DATA_DIR + hdf_file))
 
         if index is not None:
             CACHE[table_name] = CACHE[table_name].set_index(index)
@@ -128,6 +130,19 @@ def _get_naver_finance_forum_stat_table() -> DataFrame or None:
     naver_finance_forum_stats = get_cached_table(NAVER_FINANCE_FORUM_STAT_TABLE, index=['code', 'date'],
                                                  parse_dates=['date'])
     return naver_finance_forum_stats
+
+
+def _get_word_pack_table() -> DataFrame or None:
+    """
+
+    :return word_pack: (DataFrame)
+        column  code    | (str) 6 digits number string representing a company.
+                date    | (datetime) The created date and time.
+                writer  | (str) The writer of the forum.
+                word    | (str) A word.
+    """
+    word_pack = get_cached_table(WORD_PACK, parse_dates=['date'])
+    return word_pack
 
 
 def get_stock_master(code: str) -> DataFrame:

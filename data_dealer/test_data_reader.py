@@ -7,10 +7,10 @@ from unittest import TestCase
 
 from numpy import testing
 
-from data.data_reader import *
+from data_dealer.data_reader import *
 # noinspection PyProtectedMember
-from data.data_reader import _get_stock_master_table, _get_stock_price_table, _get_naver_finance_forum_table, \
-    _get_naver_finance_forum_stat_table
+from data_dealer.data_reader import _get_stock_master_table, _get_stock_price_table, _get_naver_finance_forum_table, \
+    _get_naver_finance_forum_stat_table, _get_word_pack_table
 
 
 class TestDataReader(TestCase):
@@ -44,6 +44,12 @@ class TestDataReader(TestCase):
         self.assertEqual(502884, len(naver_finance_forum_stats))
         testing.assert_array_equal(['code', 'date'], naver_finance_forum_stats.index.names)
         testing.assert_array_equal(['count'], naver_finance_forum_stats.columns.values)
+
+    def test_get_word_pack_table(self):
+        word_pack = _get_word_pack_table()
+        self.assertIsNotNone(word_pack)
+        self.assertEqual(19733406, len(word_pack))
+        testing.assert_array_equal(['code', 'date', 'word', 'writer'], word_pack.columns.values)
 
     def test_get_stock_master(self):
         code = get_stock_masters().sample(1).index.values[0]
