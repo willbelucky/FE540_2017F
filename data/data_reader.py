@@ -3,13 +3,13 @@
 :Author: Jaekyoung Kim
 :Date: 2017. 12. 3.
 """
+import os
 from datetime import datetime
+from pathlib import Path
+from typing import List
 
 import pandas as pd
 from pandas import DataFrame
-from typing import List
-from pathlib import Path
-import os
 
 idx = pd.IndexSlice
 
@@ -130,18 +130,6 @@ def _get_naver_finance_forum_stat_table() -> DataFrame or None:
     return naver_finance_forum_stats
 
 
-def get_all_stock_masters() -> DataFrame or None:
-    """
-
-    :return stock_masters: (DataFrame)
-        index   code    | (str) 6 digits number string representing a company.
-        column  name    | (str) The name of the company.
-    """
-    stock_masters = _get_stock_master_table()
-    assert stock_masters is not None
-    return stock_masters
-
-
 def get_stock_master(code: str) -> DataFrame:
     """
 
@@ -156,7 +144,7 @@ def get_stock_master(code: str) -> DataFrame:
     return stock_masters
 
 
-def get_stock_masters(codes: List[str]) -> DataFrame:
+def get_stock_masters(codes: List[str] = None) -> DataFrame:
     """
 
     :param codes: ([str]) 6 digits number strings representing companies.
@@ -166,7 +154,8 @@ def get_stock_masters(codes: List[str]) -> DataFrame:
         column  name    | (str) The name of the company.
     """
     stock_masters = _get_stock_master_table()
-    stock_masters = stock_masters.loc[codes]
+    if codes is not None:
+        stock_masters = stock_masters.loc[codes]
     return stock_masters
 
 
@@ -195,7 +184,7 @@ def get_stock_prices(stock_masters: DataFrame) -> DataFrame:
     return stock_prices
 
 
-def get_naver_finance_forums(stock_masters: DataFrame, from_date: datetime = datetime(2016, 10, 31),
+def get_naver_finance_forums(stock_masters: DataFrame = None, from_date: datetime = datetime(2016, 10, 31),
                              to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
     """
 
@@ -217,11 +206,15 @@ def get_naver_finance_forums(stock_masters: DataFrame, from_date: datetime = dat
     """
     _to_date = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
     naver_finance_forums = _get_naver_finance_forum_table()
-    naver_finance_forums = naver_finance_forums.loc[idx[stock_masters.index.values, from_date:_to_date, :], :]
+    if stock_masters is None:
+        naver_finance_forums = naver_finance_forums.loc[idx[:, from_date:_to_date, :], :]
+    else:
+        naver_finance_forums = naver_finance_forums.loc[idx[stock_masters.index.values, from_date:_to_date, :], :]
     return naver_finance_forums
 
 
-def get_naver_finance_forum_stats(stock_masters: DataFrame, from_date: datetime, to_date: datetime) -> DataFrame:
+def get_naver_finance_forum_stats(stock_masters: DataFrame = None, from_date: datetime = datetime(2016, 10, 31),
+                                  to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
     """
 
     :param stock_masters: (DataFrame)
@@ -237,5 +230,9 @@ def get_naver_finance_forum_stats(stock_masters: DataFrame, from_date: datetime,
     """
     _to_date = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
     naver_finance_forum_stats = _get_naver_finance_forum_stat_table()
-    naver_finance_forum_stats = naver_finance_forum_stats.loc[idx[stock_masters.index.values, from_date:_to_date], :]
+    if stock_masters is None:
+        naver_finance_forum_stats = naver_finance_forum_stats.loc[idx[:, from_date:_to_date], :]
+    else:
+        naver_finance_forum_stats = naver_finance_forum_stats.loc[
+                                    idx[stock_masters.index.values, from_date:_to_date], :]
     return naver_finance_forum_stats

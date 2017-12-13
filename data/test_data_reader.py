@@ -45,27 +45,27 @@ class TestDataReader(TestCase):
         testing.assert_array_equal(['code', 'date'], naver_finance_forum_stats.index.names)
         testing.assert_array_equal(['count'], naver_finance_forum_stats.columns.values)
 
-    def test_get_all_stock_masters(self):
-        stock_masters = get_all_stock_masters()
-        self.assertIsNotNone(stock_masters)
-        self.assertEqual(2061, len(stock_masters))
-
     def test_get_stock_master(self):
-        code = get_all_stock_masters().sample(1).index.values[0]
+        code = get_stock_masters().sample(1).index.values[0]
         stock_masters = get_stock_master(code)
         self.assertIsNotNone(stock_masters)
         self.assertEqual(1, len(stock_masters))
         self.assertEqual(code, stock_masters.index.values[0])
 
     def test_get_stock_masters(self):
-        codes = get_all_stock_masters().sample(10).index.values
+        codes = get_stock_masters().sample(10).index.values
         stock_masters = get_stock_masters(codes)
         self.assertIsNotNone(stock_masters)
         self.assertEqual(10, len(stock_masters))
         testing.assert_array_equal(codes, stock_masters.index.values)
 
+    def test_get_all_stock_masters(self):
+        stock_masters = get_stock_masters()
+        self.assertIsNotNone(stock_masters)
+        self.assertEqual(2061, len(stock_masters))
+
     def test_get_stock_prices(self):
-        stock_masters = get_all_stock_masters().sample(10)
+        stock_masters = get_stock_masters().sample(10)
         stock_prices = get_stock_prices(stock_masters)
         self.assertIsNotNone(stock_prices)
         self.assertEqual(2460, len(stock_prices))
@@ -78,6 +78,11 @@ class TestDataReader(TestCase):
         self.assertIsNotNone(naver_finance_forums)
         self.assertEqual(1, len(naver_finance_forums))
 
+    def test_get_all_naver_finance_forums(self):
+        naver_finance_forums = get_naver_finance_forums()
+        self.assertIsNotNone(naver_finance_forums)
+        self.assertEqual(6431219, len(naver_finance_forums))
+
     def test_get_naver_finance_forum_stats(self):
         stock_masters = get_stock_master('000040')
         from_date = datetime(2016, 11, 1)
@@ -85,4 +90,10 @@ class TestDataReader(TestCase):
         naver_finance_forum_stats = get_naver_finance_forum_stats(stock_masters, from_date, to_date)
         self.assertIsNotNone(naver_finance_forum_stats)
         self.assertEqual(1, len(naver_finance_forum_stats))
+        self.assertEqual(1, naver_finance_forum_stats.iloc[0]['count'])
+
+    def test_get_naver_finance_forum_stats(self):
+        naver_finance_forum_stats = get_naver_finance_forum_stats()
+        self.assertIsNotNone(naver_finance_forum_stats)
+        self.assertEqual(502884, len(naver_finance_forum_stats))
         self.assertEqual(1, naver_finance_forum_stats.iloc[0]['count'])
