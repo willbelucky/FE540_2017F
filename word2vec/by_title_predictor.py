@@ -53,13 +53,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=1000,
+        default=10000,
         help='Number of batch_size.'
     )
     parser.add_argument(
         '--num_epochs',
         type=int,
-        default=10,
+        default=2,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(

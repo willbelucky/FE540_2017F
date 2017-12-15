@@ -197,6 +197,85 @@ def to_excel(dataframe, dir, file_name):
     dataframe.to_excel(writer)
 
 
+# noinspection PyPep8Naming
+def to_html(test_result, flags):
+    y = test_result['label']
+    predict = test_result['prediction']
+    TP = sum(y * predict)  # 실제 1을 1이라고 예측한것
+    TN = sum((y - 1) * (predict - 1))  # 실제 0을 0이라고 예측한것
+    FP = -1 * sum((y - 1) * predict)  # 실제 0을 1이라고 예측한것
+    FN = -1 * sum(y * (predict - 1))  # 실제 1을 0이라고 예측한것
+    total = TP + TN + FP + FN
+    precision = TP / (TP + FP + 1e-20)  # 1이라고 예측한것 중 실제 1인것의 비중
+    recall = TP / (TP + FN + 1e-20)  # 실제 1인것들 중에서 예측결과가 1인 것의 비중
+    accuracy = (TP + TN) / (TP + TN + FP + FN)  # 정확히 예측(즉, 1을 1이라고, 0을 0이라고 예측)한 것의 비중
+
+    f = open('test_result_{}_{}_{}_{}_{}.html'.format(flags.embedding_size, flags.batch_size, flags.num_epochs,
+                                                      flags.dropout,
+                                                      flags.hidden_unit), 'w')
+
+    html_header = '<!DOCTYPE html>' \
+                  '<meta charset="utf-8">' \
+                  '<html><body>' \
+                  '<h3>embedding_size={},' \
+                  ' batch_size={},' \
+                  ' num_epochs={},' \
+                  ' dropout={},' \
+                  ' hidden_unit={}</h3>'.format(flags.embedding_size,
+                                                flags.batch_size,
+                                                flags.num_epochs,
+                                                flags.dropout,
+                                                flags.hidden_unit)
+    html_table = """
+        <style type="text/css">
+        .tg  {border-collapse:collapse;border-spacing:0;}
+        .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;}
+        .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;}
+        .tg .tg-s6z2{text-align:center}
+        .tg .tg-baqh{text-align:center;vertical-align:top}
+        .tg .tg-804w{font-family:Arial, Helvetica, sans-serif !important;;text-align:center;vertical-align:top}
+        .tg .tg-431l{font-family:Arial, Helvetica, sans-serif !important;;text-align:center}
+        .tg .tg-szxb{font-family:"Arial Black", Gadget, sans-serif !important;;text-align:center}
+        </style>
+        <table class="tg">
+          <tr>
+            <th class="tg-s6z2" colspan="2" rowspan="2">%ds(num)</th>
+            <th class="tg-431l" colspan="2">Prediction</th>
+            <th class="tg-804w" rowspan="2">Recall</th>
+          </tr>
+          <tr>
+            <td class="tg-szxb">0</td>
+            <td class="tg-szxb">1</td>
+          </tr>
+          <tr>
+            <td class="tg-431l" rowspan="2">Label</td>
+            <td class="tg-szxb">0</td>
+            <td class="tg-s6z2">%ds(num)</td>
+            <td class="tg-s6z2">%ds(num)</td>
+            <td class="tg-baqh"></td>
+          </tr>
+          <tr>
+            <td class="tg-szxb">1</td>
+            <td class="tg-s6z2">%ds(num)</td>
+            <td class="tg-s6z2">%ds(num)</td>
+            <td class="tg-baqh">%ds(num)</td>
+          </tr>
+          <tr>
+            <td class="tg-804w" colspan="2">Precision</td>
+            <td class="tg-baqh"></td>
+            <td class="tg-baqh">%ds(num)</td>
+            <td class="tg-baqh">%ds(num)</td>
+          </tr>
+        </table>
+    """ % (total, TN, FP, FN, TP, recall, precision, accuracy)
+    html_footer = '</body></html>'
+
+    f.write(html_header)
+    f.write(html_table)
+    f.write(html_footer)
+    f.close()
+
+
 def run_training(flags, data_sets):
     """Train mnist_example for a number of steps."""
     data_sets = to_recurrent_data(data_sets, flags.time_step)
@@ -290,6 +369,9 @@ def run_training(flags, data_sets):
                                                                                    flags.max_steps,
                                                                                    flags.time_step,
                                                                                    flags.hidden_units))
+
+        # Save the test result as a html file.
+        to_html(test_result, flags)
 
         # draw a test graph
         matplotlib.rc('font', family='NanumBarunGothicOTF')
