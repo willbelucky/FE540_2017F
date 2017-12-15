@@ -26,6 +26,12 @@ def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
+    if not tf.gfile.Exists(FLAGS.excel_dir):
+        tf.gfile.MakeDirs(FLAGS.excel_dir)
+    if not tf.gfile.Exists(FLAGS.image_dir):
+        tf.gfile.MakeDirs(FLAGS.image_dir)
+    if not tf.gfile.Exists(FLAGS.html_dir):
+        tf.gfile.MakeDirs(FLAGS.html_dir)
     sentences, targets = data_reader()
     run_training(flags=FLAGS, sentences=sentences, targets=targets)
 
@@ -35,7 +41,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.001,
+        default=0.01,
         help='Initial learning rate.'
     )
     parser.add_argument(

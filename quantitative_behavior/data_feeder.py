@@ -159,13 +159,13 @@ def to_recurrent_data(data_sets, time_step):
     assert len(units) == len(dates)
 
     options = dict(dtype=data_sets.train.dtype, seed=data_sets.train.seed, column_number=data_sets.column_number,
-                   class_number=data_sets.class_number, batch_size=test_size)
+                   class_number=data_sets.class_number, batch_size=data_sets.batch_size)
 
     train = DataSet(units[:train_size], labels[:train_size], dates[:train_size], **options)
     test = DataSet(units[train_size:], labels[train_size:], dates[train_size:], **options)
 
     return DATASETS(train=train, test=test, column_number=data_sets.column_number,
-                    class_number=data_sets.class_number, batch_size=test_size)
+                    class_number=data_sets.class_number, batch_size=data_sets.batch_size)
 
 
 def dataframe_to_recurrent_ndarray(x, time_step):
@@ -182,6 +182,7 @@ def dataframe_to_recurrent_ndarray(x, time_step):
 
 def read_data(test_start_date=datetime(2017, 8, 1),
               shuffle=True,
+              batch_size=100,
               dtype=dtypes.float32,
               seed=None):
     quantitative_behaviors = get_quantitative_behaviors()
@@ -205,9 +206,9 @@ def read_data(test_start_date=datetime(2017, 8, 1),
     test_labels = labels[quantitative_behaviors['date'] >= test_start_date]['label']
     test_dates = dates[quantitative_behaviors['date'] >= test_start_date]['date']
 
-    options = dict(dtype=dtype, seed=seed, column_number=column_number, class_number=2, batch_size=len(test_units))
+    options = dict(dtype=dtype, seed=seed, column_number=column_number, class_number=2, batch_size=batch_size)
 
     train = DataSet(train_units, train_labels, train_dates, **options)
     test = DataSet(test_units, test_labels, test_dates, **options)
 
-    return DATASETS(train=train, test=test, column_number=column_number, class_number=2, batch_size=len(test_units))
+    return DATASETS(train=train, test=test, column_number=column_number, class_number=2, batch_size=batch_size)

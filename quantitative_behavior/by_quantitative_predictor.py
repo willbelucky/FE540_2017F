@@ -20,7 +20,14 @@ def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
-    run_training(flags=FLAGS, data_sets=read_data(test_start_date=datetime(2017, 8, 1), shuffle=False))
+    if not tf.gfile.Exists(FLAGS.excel_dir):
+        tf.gfile.MakeDirs(FLAGS.excel_dir)
+    if not tf.gfile.Exists(FLAGS.image_dir):
+        tf.gfile.MakeDirs(FLAGS.image_dir)
+    if not tf.gfile.Exists(FLAGS.html_dir):
+        tf.gfile.MakeDirs(FLAGS.html_dir)
+    run_training(flags=FLAGS,
+                 data_sets=read_data(test_start_date=datetime(2017, 8, 1), shuffle=False, batch_size=FLAGS.batch_size))
 
 
 if __name__ == '__main__':
@@ -48,6 +55,12 @@ if __name__ == '__main__':
         type=int,
         default=10,
         help='Number of time window.'
+    )
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=1000,
+        help='Number of batch_size.'
     )
     parser.add_argument(
         '--hidden_units',
