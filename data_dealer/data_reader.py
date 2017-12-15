@@ -15,16 +15,24 @@ idx = pd.IndexSlice
 
 STOCK_MASTER_TABLE = 'stock_master'
 STOCK_PRICE_TABLE = 'stock_price'
+STOCK_MINUTE_PRICE_TABLE = 'stock_minute_price'
+STOCK_VOLUME_TABLE = 'stock_volume'
 NAVER_FINANCE_FORUM_TABLE = 'naver_finance_forum'
 NAVER_FINANCE_FORUM_STAT_TABLE = 'naver_finance_forum_stat'
-WORD_PACK = 'word_pack'
+TITLE_TABLE = 'title'
+WORD_PACK_TABLE = 'word_pack'
+QUANTITATIVE_BEHAVIOR_TABLE = 'quantitative_behavior'
 
 CACHE = {
     STOCK_MASTER_TABLE: None,
     STOCK_PRICE_TABLE: None,
+    STOCK_MINUTE_PRICE_TABLE: None,
+    STOCK_VOLUME_TABLE: None,
     NAVER_FINANCE_FORUM_TABLE: None,
     NAVER_FINANCE_FORUM_STAT_TABLE: None,
-    WORD_PACK: None,
+    TITLE_TABLE: None,
+    WORD_PACK_TABLE: None,
+    QUANTITATIVE_BEHAVIOR_TABLE: None,
 }
 
 # Set your working directory FE540_2017F.
@@ -53,12 +61,18 @@ def get_cached_table(table_name: str, index=None, parse_dates=None) -> DataFrame
         else:
             CACHE[table_name] = pd.read_csv(DATA_DIR + csv_file,
                                             parse_dates=parse_dates, low_memory=False)
+            # Drop duplicates except for the last occurrence.
+            if index is not None:
+                CACHE[table_name] = CACHE[table_name].drop_duplicates(subset=index, keep='last')
+            # Save as a h5 file.
             CACHE[table_name].to_hdf(DATA_DIR + hdf_file, 'table')
             print('Create {}'.format(DATA_DIR + hdf_file))
 
         if index is not None:
             CACHE[table_name] = CACHE[table_name].set_index(index)
+            CACHE[table_name] = CACHE[table_name].sort_index()
 
+        # Treat stock_price specially.
         if table_name == STOCK_PRICE_TABLE:
             CACHE[STOCK_PRICE_TABLE]['adj_close'] = CACHE[STOCK_PRICE_TABLE]['market_capitalization'] / \
                                                     CACHE[STOCK_PRICE_TABLE]['listed_stocks_number']
@@ -101,6 +115,52 @@ def _get_stock_price_table() -> DataFrame or None:
     return stock_prices
 
 
+def _get_stock_minute_price_table() -> DataFrame or None:
+    """
+
+    :return stock_minute_prices: (DataFrame)
+        index   code                    | (str) 6 digits number string representing a company.
+                date                    | (datetime) The created date.
+        column  volume                  | (int) The number of traded stocks of a day.
+                open                    | (int) The first price of a day.
+                high                    | (int) The highest price of a day.
+                low                     | (int) The lowest price of a day.
+                close                   | (int) The final price of a day.
+    """
+    stock_minute_prices = get_cached_table(STOCK_MINUTE_PRICE_TABLE, index=['code', 'date'], parse_dates=['date'])
+    return stock_minute_prices
+
+
+def _get_stock_volume_table() -> DataFrame or None:
+    """
+
+    :return stock_volumes: (DataFrame)
+        index   code            | (str) 6 digits number string representing a company.
+                date            | (datetime) The created date.
+        column  personal        | (int)
+                national        | (int)
+                investment      | (int)
+                total_org       | (int)
+                other_finance   | (int)
+                other_law       | (int)
+                other_foreign   | (int)
+                foreign         | (int)
+                insurance       | (int)
+                pef             | (int)
+                pension         | (int)
+                total_foreign   | (int)
+                bank            | (int)
+                trust           | (int)
+    """
+    stock_volumes = get_cached_table(STOCK_VOLUME_TABLE, index=['code', 'date'], parse_dates=['date'])
+    stock_volumes = stock_volumes.reset_index()
+    stock_volumes['code'] = stock_volumes['code'].apply(str)
+    stock_volumes['code'] = stock_volumes['code'].str.zfill(6)
+    stock_volumes = stock_volumes.set_index(['code', 'date'])
+    stock_volumes = stock_volumes.sort_index()
+    return stock_volumes
+
+
 def _get_naver_finance_forum_table() -> DataFrame or None:
     """
 
@@ -141,8 +201,82 @@ def _get_word_pack_table() -> DataFrame or None:
                 writer  | (str) The writer of the forum.
                 word    | (str) A word.
     """
-    word_pack = get_cached_table(WORD_PACK, parse_dates=['date'])
+    word_pack = get_cached_table(WORD_PACK_TABLE, parse_dates=['date'])
     return word_pack
+
+
+def _get_title_table() -> DataFrame or None:
+    """
+
+    :return titles: (DataFrame)
+        index   code    | (str) 6 digits number string representing a company.
+                date    | (datetime) The created date and time.
+                writer  | (str) The writer of the forum.
+        column  title   | (str) The title.
+                label   | (int) If stock profit is positive, label is 1, else label is 0.
+    """
+    titles = get_cached_table(TITLE_TABLE, index=['code', 'date', 'writer'], parse_dates=['date'])
+    return titles
+
+
+def _get_quantitative_behavior_table() -> DataFrame or None:
+    """
+
+    :return quantitative_behaviors: (DataFrame)
+        index   code                | (str) 6 digits number string representing a company.
+                date                | (datetime) The created date and time.
+        column  adj_close_1/5       | (float)
+                personal_1/5        | (float)
+                national_1/5        | (float)
+                investment_1/5      | (float)
+                total_org_1/5       | (float)
+                other_finance_1/5   | (float)
+                other_law_1/5       | (float)
+                other_foreign_1/5   | (float)
+                foreign_1/5         | (float)
+                insurance_1/5       | (float)
+                pef_1/5             | (float)
+                pension_1/5         | (float)
+                total_foreign_1/5   | (float)
+                bank_1/5            | (float)
+                trust_1/5           | (float)
+                count_1/5           | (float) The number of posts.
+                adj_close_5/20      | (float)
+                personal_5/20       | (float)
+                national_5/20       | (float)
+                investment_5/20     | (float)
+                total_org_5/20      | (float)
+                other_finance_5/20  | (float)
+                other_law_5/20      | (float)
+                other_foreign_5/20  | (float)
+                foreign_5/20        | (float)
+                insurance_5/20      | (float)
+                pef_5/20            | (float)
+                pension_5/20        | (float)
+                total_foreign_5/20  | (float)
+                bank_5/20           | (float)
+                trust_5/20          | (float)
+                count_5/20          | (float) The number of posts.
+                adj_close_5/20      | (float)
+                personal_20/60      | (float)
+                national_20/60      | (float)
+                investment_20/60    | (float)
+                total_org_20/60     | (float)
+                other_finance_20/60 | (float)
+                other_law_20/60     | (float)
+                other_foreign_20/60 | (float)
+                foreign_20/60       | (float)
+                insurance_20/60     | (float)
+                pef_20/60           | (float)
+                pension_20/60       | (float)
+                total_foreign_20/60 | (float)
+                bank_20/60          | (float)
+                trust_20/60         | (float)
+                count_20/60         | (float) The number of posts.
+                label               | (int) If stock profit is positive, label is 1, else label is 0.
+    """
+    titles = get_cached_table(QUANTITATIVE_BEHAVIOR_TABLE, index=['code', 'date'], parse_dates=['date'])
+    return titles
 
 
 def get_stock_master(code: str) -> DataFrame:
@@ -196,10 +330,66 @@ def get_stock_prices(stock_masters: DataFrame) -> DataFrame:
     """
     stock_prices = _get_stock_price_table()
     stock_prices = stock_prices.loc[idx[stock_masters.index.values, :], :]
+    # assert len(stock_prices) > 0, 'There is no stock price of {}'.format(stock_masters.index.values)
     return stock_prices
 
 
-def get_naver_finance_forums(stock_masters: DataFrame = None, from_date: datetime = datetime(2016, 10, 31),
+def get_stock_minute_prices(stock_masters: DataFrame, from_date: datetime = datetime(2016, 11, 1),
+                            to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
+    """
+
+    :param stock_masters: (DataFrame)
+        index   code    | (str) 6 digits number string representing a company.
+        column  name    | (str) The name of the company.
+    :param from_date: (datetime) The start date.
+    :param to_date: (datetime) The end date.
+
+    :return stock_minute_prices: (DataFrame)
+        index   code                    | (str) 6 digits number string representing a company.
+                date                    | (datetime) The created date.
+        column  volume                  | (int) The number of traded stocks of a day.
+                open                    | (int) The first price of a day.
+                high                    | (int) The highest price of a day.
+                low                     | (int) The lowest price of a day.
+                close                   | (int) The final price of a day.
+    """
+    _to_date = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
+    stock_minute_prices = _get_stock_minute_price_table()
+    stock_minute_prices = stock_minute_prices.loc[idx[stock_masters.index.values, from_date:_to_date], :]
+    # assert len(stock_minute_prices) > 0, 'There is no stock minute price of {} from {}, to {}'.format(
+    #     stock_masters.index.values, from_date, _to_date)
+    return stock_minute_prices
+
+
+def get_stock_volumes(stock_masters: DataFrame, from_date: datetime = datetime(2016, 11, 1),
+                      to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
+    """
+
+    :return stock_volumes: (DataFrame)
+        index   code            | (str) 6 digits number string representing a company.
+                date            | (datetime) The created date.
+        column  personal        | (int)
+                national        | (int)
+                investment      | (int)
+                total_org       | (int)
+                other_finance   | (int)
+                other_law       | (int)
+                other_foreign   | (int)
+                foreign         | (int)
+                insurance       | (int)
+                pef             | (int)
+                pension         | (int)
+                total_foreign   | (int)
+                bank            | (int)
+                trust           | (int)
+    """
+    _to_date = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
+    stock_volumes = _get_stock_volume_table()
+    stock_volumes = stock_volumes.loc[idx[stock_masters.index.values, from_date:_to_date], :]
+    return stock_volumes
+
+
+def get_naver_finance_forums(stock_masters: DataFrame = None, from_date: datetime = datetime(2016, 11, 1),
                              to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
     """
 
@@ -228,7 +418,7 @@ def get_naver_finance_forums(stock_masters: DataFrame = None, from_date: datetim
     return naver_finance_forums
 
 
-def get_naver_finance_forum_stats(stock_masters: DataFrame = None, from_date: datetime = datetime(2016, 10, 31),
+def get_naver_finance_forum_stats(stock_masters: DataFrame = None, from_date: datetime = datetime(2016, 11, 1),
                                   to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
     """
 
@@ -251,3 +441,90 @@ def get_naver_finance_forum_stats(stock_masters: DataFrame = None, from_date: da
         naver_finance_forum_stats = naver_finance_forum_stats.loc[
                                     idx[stock_masters.index.values, from_date:_to_date], :]
     return naver_finance_forum_stats
+
+
+def get_word_pack():
+    """
+
+    :return word_pack: (DataFrame)
+        column  code    | (str) 6 digits number string representing a company.
+                date    | (datetime) The created date and time.
+                writer  | (str) The writer of the forum.
+                word    | (str) A word.
+    """
+    word_pack = _get_word_pack_table()
+    return word_pack
+
+
+def get_titles():
+    """
+
+    :return titles: (DataFrame)
+        index   code    | (str) 6 digits number string representing a company.
+                date    | (datetime) The created date and time.
+                writer  | (str) The writer of the forum.
+        column  title   | (str) The title.
+                label   | (int) If stock profit is positive, label is 1, else label is 0.
+    """
+    titles = _get_title_table()
+    return titles
+
+
+def get_quantitative_behaviors():
+    """
+
+    :return quantitative_behaviors: (DataFrame)
+        index   code                | (str) 6 digits number string representing a company.
+                date                | (datetime) The created date and time.
+        column  adj_close_1/5       | (float)
+                personal_1/5        | (float)
+                national_1/5        | (float)
+                investment_1/5      | (float)
+                total_org_1/5       | (float)
+                other_finance_1/5   | (float)
+                other_law_1/5       | (float)
+                other_foreign_1/5   | (float)
+                foreign_1/5         | (float)
+                insurance_1/5       | (float)
+                pef_1/5             | (float)
+                pension_1/5         | (float)
+                total_foreign_1/5   | (float)
+                bank_1/5            | (float)
+                trust_1/5           | (float)
+                count_1/5           | (float) The number of posts.
+                adj_close_5/20      | (float)
+                personal_5/20       | (float)
+                national_5/20       | (float)
+                investment_5/20     | (float)
+                total_org_5/20      | (float)
+                other_finance_5/20  | (float)
+                other_law_5/20      | (float)
+                other_foreign_5/20  | (float)
+                foreign_5/20        | (float)
+                insurance_5/20      | (float)
+                pef_5/20            | (float)
+                pension_5/20        | (float)
+                total_foreign_5/20  | (float)
+                bank_5/20           | (float)
+                trust_5/20          | (float)
+                count_5/20          | (float) The number of posts.
+                adj_close_5/20      | (float)
+                personal_20/60      | (float)
+                national_20/60      | (float)
+                investment_20/60    | (float)
+                total_org_20/60     | (float)
+                other_finance_20/60 | (float)
+                other_law_20/60     | (float)
+                other_foreign_20/60 | (float)
+                foreign_20/60       | (float)
+                insurance_20/60     | (float)
+                pef_20/60           | (float)
+                pension_20/60       | (float)
+                total_foreign_20/60 | (float)
+                bank_20/60          | (float)
+                trust_20/60         | (float)
+                count_20/60         | (float) The number of posts.
+                label               | (int) If stock profit is positive, label is 1, else label is 0.
+    """
+    quantitative_behaviors = _get_quantitative_behavior_table()
+    return quantitative_behaviors

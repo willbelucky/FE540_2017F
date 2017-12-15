@@ -10,7 +10,8 @@ from numpy import testing
 from data_dealer.data_reader import *
 # noinspection PyProtectedMember
 from data_dealer.data_reader import _get_stock_master_table, _get_stock_price_table, _get_naver_finance_forum_table, \
-    _get_naver_finance_forum_stat_table, _get_word_pack_table
+    _get_naver_finance_forum_stat_table, _get_word_pack_table, _get_stock_minute_price_table, _get_stock_volume_table, \
+    _get_title_table, _get_quantitative_behavior_table
 
 
 class TestDataReader(TestCase):
@@ -29,6 +30,24 @@ class TestDataReader(TestCase):
         testing.assert_array_equal(['volume', 'open', 'high', 'low', 'close', 'market_capitalization',
                                     'listed_stocks_number', 'adj_close', 'adj_open'],
                                    stock_prices.columns.values)
+
+    def test_get_stock_minute_price_table(self):
+        stock_minute_prices = _get_stock_minute_price_table()
+        self.assertIsNotNone(stock_minute_prices)
+        self.assertEqual(65518652, len(stock_minute_prices))
+        testing.assert_array_equal(['code', 'date'], stock_minute_prices.index.names)
+        testing.assert_array_equal(['open', 'high', 'low', 'close', 'volume'],
+                                   stock_minute_prices.columns.values)
+
+    def test_get_stock_volume_table(self):
+        stock_minute_prices = _get_stock_volume_table()
+        self.assertIsNotNone(stock_minute_prices)
+        self.assertEqual(476555, len(stock_minute_prices))
+        testing.assert_array_equal(['code', 'date'], stock_minute_prices.index.names)
+        testing.assert_array_equal(['personal', 'national', 'investment', 'total_institution',
+                                    'other_finance', 'other_corporation', 'other_foreign', 'foreign',
+                                    'insurance', 'pef', 'pension', 'total_foreign', 'bank', 'trust'],
+                                   stock_minute_prices.columns.values)
 
     def test_get_naver_finance_forum_table(self):
         naver_finance_forums = _get_naver_finance_forum_table()
@@ -50,6 +69,33 @@ class TestDataReader(TestCase):
         self.assertIsNotNone(word_pack)
         self.assertEqual(19733406, len(word_pack))
         testing.assert_array_equal(['code', 'date', 'word', 'writer'], word_pack.columns.values)
+
+    def test_get_title_table(self):
+        titles = _get_title_table()
+        self.assertIsNotNone(titles)
+        self.assertEqual(2272354, len(titles))
+        testing.assert_array_equal(['code', 'date', 'writer'], titles.index.names)
+        testing.assert_array_equal(['title', 'label'], titles.columns.values)
+
+    def test_get_quantitative_behavior_table(self):
+        quantitative_behaviors = _get_quantitative_behavior_table()
+        self.assertIsNotNone(quantitative_behaviors)
+        self.assertEqual(362916, len(quantitative_behaviors))
+        testing.assert_array_equal(['code', 'date'], quantitative_behaviors.index.names)
+        print(quantitative_behaviors.columns.values)
+        testing.assert_array_equal(['adj_close_1/5', 'personal_1/5', 'national_1/5', 'investment_1/5',
+                                    'total_institution_1/5', 'other_finance_1/5', 'other_corporation_1/5',
+                                    'other_foreign_1/5', 'foreign_1/5', 'insurance_1/5', 'pef_1/5', 'pension_1/5',
+                                    'total_foreign_1/5', 'bank_1/5', 'trust_1/5', 'count_1/5', 'adj_close_5/20',
+                                    'personal_5/20', 'national_5/20', 'investment_5/20', 'total_institution_5/20',
+                                    'other_finance_5/20', 'other_corporation_5/20', 'other_foreign_5/20',
+                                    'foreign_5/20', 'insurance_5/20', 'pef_5/20', 'pension_5/20',
+                                    'total_foreign_5/20', 'bank_5/20', 'trust_5/20', 'count_5/20',
+                                    'adj_close_20/60', 'personal_20/60', 'national_20/60', 'investment_20/60',
+                                    'total_institution_20/60', 'other_finance_20/60', 'other_corporation_20/60',
+                                    'other_foreign_20/60', 'foreign_20/60', 'insurance_20/60', 'pef_20/60',
+                                    'pension_20/60', 'total_foreign_20/60', 'bank_20/60', 'trust_20/60',
+                                    'count_20/60', 'label'], quantitative_behaviors.columns.values)
 
     def test_get_stock_master(self):
         code = get_stock_masters().sample(1).index.values[0]
