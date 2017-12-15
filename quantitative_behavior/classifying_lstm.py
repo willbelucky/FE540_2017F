@@ -14,6 +14,7 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib
 import matplotlib.pyplot as plt
+import progressbar
 
 from quantitative_behavior.data_feeder import to_recurrent_data
 
@@ -246,6 +247,11 @@ def run_training(flags, data_sets):
         print("{:f}\t{:d}\t{}".format(flags.learning_rate, flags.max_steps, flags.hidden_units))
         print("")
         print(" ".join(['step', 'loss_value', 'training_accuracy', 'test_accuracy']))
+
+        # Initialize a progressbar.
+        widgets = [progressbar.Percentage(), progressbar.Bar()]
+        bar = progressbar.ProgressBar(widgets=widgets, max_value=(flags.max_steps + 1)).start()
+
         # Start the training loop.
         for step in range(flags.max_steps + 1):
 
@@ -282,12 +288,16 @@ def run_training(flags, data_sets):
                                                                             labels_placeholder,
                                                                             data_sets.test,
                                                                             flags)
-                print("{:d}\t{:f}\t{:f}\t{:f}".format(step, loss_value, training_accuracy,
-                                                      test_accuracy))
                 results[step] = {
                     'train_accuracy': training_accuracy,
                     'test_accuracy': test_accuracy,
                 }
+
+            # Update the progressbar.
+            bar.update(step + 1)
+
+        # Finish the progressbar.
+        bar.finish()
 
         # Save the test result as an excel file.
         test_result = pd.DataFrame(results)
