@@ -87,6 +87,12 @@ if __name__ == '__main__':
         help='Directory to put the excel file.'
     )
     parser.add_argument(
+        '--html_dir',
+        type=str,
+        default=os.path.join(os.getcwd(), 'word2vec/htmls/'),
+        help='Directory to put the html file.'
+    )
+    parser.add_argument(
         '--log_dir',
         type=str,
         default=os.path.join(os.getcwd(), 'word2vec/logs/fully_connected_feed/'),

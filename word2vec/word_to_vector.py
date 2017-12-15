@@ -142,9 +142,10 @@ def to_html(test_result, flags):
     recall = TP / (TP + FN + 1e-20)  # 실제 1인것들 중에서 예측결과가 1인 것의 비중
     accuracy = (TP + TN) / (TP + TN + FP + FN)  # 정확히 예측(즉, 1을 1이라고, 0을 0이라고 예측)한 것의 비중
 
-    f = open('test_result_{}_{}_{}_{}_{}.html'.format(flags.embedding_size, flags.batch_size, flags.num_epochs,
-                                                      flags.dropout,
-                                                      flags.hidden_unit), 'w')
+    f = open(flags.html_dir + 'test_result_{}_{}_{}_{}_{}.html'.format(flags.embedding_size, flags.batch_size,
+                                                                       flags.num_epochs,
+                                                                       flags.dropout,
+                                                                       flags.hidden_unit), 'w')
 
     html_header = '<!DOCTYPE html>' \
                   '<meta charset="utf-8">' \
