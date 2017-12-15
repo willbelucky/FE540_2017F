@@ -1,26 +1,33 @@
 # -*- coding: utf-8 -*-
 """
 :Author: Jaekyoung Kim
-:Date: 2017. 11. 22.
+:Date: 2017. 12. 13.
 """
 import argparse
 import os
 import sys
-from datetime import datetime
 
 import tensorflow as tf
 
-from quantitative_behavior.classifying_lstm import run_training
-from quantitative_behavior.data_feeder import read_data
+from word2vec.word_to_vector import run_training
 
-FLAGS = None
+from data_dealer.data_reader import get_titles
+
+
+def data_reader():
+    titles = get_titles()
+    sentences = [words.split() for words in titles['title'].values]
+    targets = titles['label'].tolist()
+
+    return sentences, targets
 
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
-    run_training(flags=FLAGS, data_sets=read_data(test_start_date=datetime(2017, 8, 1), shuffle=False))
+    sentences, targets = data_reader()
+    run_training(flags=FLAGS, sentences=sentences, targets=targets)
 
 
 if __name__ == '__main__':
@@ -34,44 +41,55 @@ if __name__ == '__main__':
     parser.add_argument(
         '--dropout',
         type=float,
-        default=None,
+        default=0.2,
         help='The dropout rate, between 0 and 1. E.g. "rate=0.1" would drop out 10% of input units.'
     )
     parser.add_argument(
-        '--max_steps',
+        '--embedding_size',
         type=int,
-        default=20,
+        default=128,
+        help='Number of embedding_size.'
+    )
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=1000,
+        help='Number of batch_size.'
+    )
+    parser.add_argument(
+        '--num_epochs',
+        type=int,
+        default=10,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
-        '--time_step',
+        '--hidden_unit',
         type=int,
-        default=10,
-        help='Number of time window.'
+        default=256,
+        help='Number of units in hidden layers.'
     )
     parser.add_argument(
-        '--hidden_units',
-        nargs='+',
-        type=int,
-        default=[128],
-        help='Number of units in hidden layers.'
+        '--test_rate',
+        type=float,
+        default=0.25,
+        help='Test rate. The portion of test set.'
     )
     parser.add_argument(
         '--image_dir',
         type=str,
-        default=os.path.join(os.getcwd(), 'quantitative_behavior/images/'),
+        default=os.path.join(os.getcwd(), 'word2vec/images/'),
         help='Directory to put the image.'
     )
     parser.add_argument(
         '--excel_dir',
         type=str,
-        default=os.path.join(os.getcwd(), 'quantitative_behavior/excels/'),
+        default=os.path.join(os.getcwd(), 'word2vec/excels/'),
         help='Directory to put the excel file.'
     )
     parser.add_argument(
         '--log_dir',
         type=str,
-        default=os.path.join(os.getcwd(), 'quantitative_behavior/logs/fully_connected_feed/'),
+        default=os.path.join(os.getcwd(), 'word2vec/logs/fully_connected_feed/'),
         help='Directory to put the log data.'
     )
 

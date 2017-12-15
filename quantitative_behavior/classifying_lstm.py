@@ -14,7 +14,6 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib
 import matplotlib.pyplot as plt
-import progressbar
 
 from quantitative_behavior.data_feeder import to_recurrent_data
 
@@ -142,7 +141,7 @@ def placeholder_inputs(batch_size, time_step, column_number):
     return units_placeholder, labels_placeholder
 
 
-def fill_feed_dict(data_set, units_pl, labels_pl, flags):
+def fill_feed_dict(data_set, units_pl, labels_pl):
     """Fills the feed_dict for training the given step.
     A feed_dict takes the form of:
     feed_dict = {
@@ -153,7 +152,6 @@ def fill_feed_dict(data_set, units_pl, labels_pl, flags):
       data_set: The set of units and labels, from data.read_data_sets()
       units_pl: The units placeholder, from placeholder_inputs().
       labels_pl: The labels placeholder, from placeholder_inputs().
-      flags: The given options.
     Returns:
       feed_dict: The feed dictionary mapping from placeholders to values.
     """
@@ -171,8 +169,7 @@ def do_eval(sess,
             eval_correct,
             units_placeholder,
             labels_placeholder,
-            data_set,
-            flags):
+            data_set):
     """Runs one evaluation against the full epoch of data.
     Args:
       sess: The session in which the model has been trained.
@@ -181,7 +178,6 @@ def do_eval(sess,
       labels_placeholder: The labels placeholder.
       data_set: The set of units and labels to evaluate, from
         data.read_data_sets().
-      flags: Given options.
     """
     # And run one epoch of eval.
     true_count = 0  # Counts the number of correct predictions.
@@ -190,8 +186,7 @@ def do_eval(sess,
     for step in range(steps_per_epoch):
         feed_dict = fill_feed_dict(data_set,
                                    units_placeholder,
-                                   labels_placeholder,
-                                   flags)
+                                   labels_placeholder)
         true_count += sess.run(eval_correct, feed_dict=feed_dict)
     precision = float(true_count) / num_examples
     return num_examples, true_count, precision
@@ -241,17 +236,13 @@ def run_training(flags, data_sets):
         # Run the Op to initialize the variables.
         sess.run(init)
 
+        # Initialize a dictionary for save test result temporally.
         results = {}
 
         print("\t".join(['learning_rate', 'max_steps', 'hidden_units']))
         print("{:f}\t{:d}\t{}".format(flags.learning_rate, flags.max_steps, flags.hidden_units))
         print("")
         print(" ".join(['step', 'loss_value', 'training_accuracy', 'test_accuracy']))
-
-        # Initialize a progressbar.
-        widgets = [progressbar.Percentage(), progressbar.Bar()]
-        bar = progressbar.ProgressBar(widgets=widgets, max_value=(flags.max_steps + 1)).start()
-
         # Start the training loop.
         for step in range(flags.max_steps + 1):
 
@@ -259,8 +250,7 @@ def run_training(flags, data_sets):
             # for this particular training step.
             feed_dict = fill_feed_dict(data_sets.train,
                                        units_placeholder,
-                                       labels_placeholder,
-                                       flags)
+                                       labels_placeholder)
 
             # Run one step of the model.  The return values are the activations
             # from the `train_op` (which is discarded) and the `loss` Op.  To
@@ -271,7 +261,7 @@ def run_training(flags, data_sets):
                                      feed_dict=feed_dict)
 
             # Save a checkpoint and evaluate the model periodically.
-            if step % (flags.max_steps / 100) == 0:
+            if step % (flags.max_steps / 10) == 0:
                 checkpoint_file = os.path.join(flags.log_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=step)
                 # Evaluate against the training set.
@@ -279,32 +269,27 @@ def run_training(flags, data_sets):
                                                                                         eval_correct,
                                                                                         units_placeholder,
                                                                                         labels_placeholder,
-                                                                                        data_sets.train,
-                                                                                        flags)
+                                                                                        data_sets.train)
                 # Evaluate against the test set.
                 test_num_examples, test_true_count, test_accuracy = do_eval(sess,
                                                                             eval_correct,
                                                                             units_placeholder,
                                                                             labels_placeholder,
-                                                                            data_sets.test,
-                                                                            flags)
+                                                                            data_sets.test)
+                print("{:d}\t{:f}\t{:f}\t{:f}".format(step, loss_value, training_accuracy,
+                                                      test_accuracy))
                 results[step] = {
                     'train_accuracy': training_accuracy,
                     'test_accuracy': test_accuracy,
                 }
 
-            # Update the progressbar.
-            bar.update(step + 1)
-
-        # Finish the progressbar.
-        bar.finish()
-
         # Save the test result as an excel file.
         test_result = pd.DataFrame(results)
-        to_excel(test_result, flags.excel_dir,
-                 'test_result_{}_{}_{}_{}_{}'.format(flags.learning_rate, flags.dropout, flags.max_steps,
-                                                     flags.time_step,
-                                                     flags.hidden_units))
+        to_excel(test_result, flags.excel_dir, 'test_result_{}_{}_{}_{}_{}'.format(flags.learning_rate,
+                                                                                   flags.dropout,
+                                                                                   flags.max_steps,
+                                                                                   flags.time_step,
+                                                                                   flags.hidden_units))
 
         # draw a test graph
         matplotlib.rc('font', family='NanumBarunGothicOTF')
@@ -315,7 +300,8 @@ def run_training(flags, data_sets):
 
         plt.xlabel('step')
         plt.ylabel('accuracy')
-        plt.savefig(flags.image_dir + 'test_result_{}_{}_{}_{}_{}.png'.format(flags.learning_rate, flags.dropout,
+        plt.savefig(flags.image_dir + 'test_result_{}_{}_{}_{}_{}.png'.format(flags.learning_rate,
+                                                                              flags.dropout,
                                                                               flags.max_steps,
                                                                               flags.time_step,
                                                                               flags.hidden_units))
