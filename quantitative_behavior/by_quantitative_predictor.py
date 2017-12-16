@@ -41,7 +41,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--dropout',
         type=float,
-        default=None,
+        default=0.3,
         help='The dropout rate, between 0 and 1. E.g. "rate=0.1" would drop out 10% of input units.'
     )
     parser.add_argument(
@@ -66,7 +66,7 @@ if __name__ == '__main__':
         '--hidden_units',
         nargs='+',
         type=int,
-        default=[128],
+        default=[32],
         help='Number of units in hidden layers.'
     )
     parser.add_argument(

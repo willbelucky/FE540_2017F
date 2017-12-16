@@ -237,7 +237,11 @@ def run_training(flags, data_sets):
         sess.run(init)
 
         # Initialize a dictionary for save test result temporally.
-        results = {}
+        results = {
+            'step': [],
+            'train_accuracy': [],
+            'test_accuracy': [],
+        }
 
         print("\t".join(['learning_rate', 'max_steps', 'hidden_units']))
         print("{:f}\t{:d}\t{}".format(flags.learning_rate, flags.max_steps, flags.hidden_units))
@@ -278,13 +282,13 @@ def run_training(flags, data_sets):
                                                                             data_sets.test)
                 print("{:d}\t{:f}\t{:f}\t{:f}".format(step, loss_value, training_accuracy,
                                                       test_accuracy))
-                results[step] = {
-                    'train_accuracy': training_accuracy,
-                    'test_accuracy': test_accuracy,
-                }
+                results['step'].append(step)
+                results['train_accuracy'].append(training_accuracy)
+                results['test_accuracy'].append(test_accuracy)
 
         # Save the test result as an excel file.
         test_result = pd.DataFrame(results)
+        test_result = test_result.set_index(keys=['step'])
         to_excel(test_result, flags.excel_dir, 'test_result_{}_{}_{}_{}_{}'.format(flags.learning_rate,
                                                                                    flags.dropout,
                                                                                    flags.max_steps,
@@ -292,7 +296,7 @@ def run_training(flags, data_sets):
                                                                                    flags.hidden_units))
 
         # draw a test graph
-        matplotlib.rc('font', family='NanumBarunGothicOTF')
+        # matplotlib.rc('font', family='NanumBarunGothicOTF')
         fig, ax = plt.subplots()
         ax.plot(test_result['train_accuracy'], 'k', label='train', linewidth=1)
         ax.plot(test_result['test_accuracy'], 'r', label='test', linewidth=1)
