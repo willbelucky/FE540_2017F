@@ -14,6 +14,7 @@ from keras.layers import Dense, LSTM, Activation, Embedding, Dropout
 from keras.models import Sequential
 from keras.preprocessing import sequence
 from sklearn.model_selection import train_test_split
+import progressbar
 
 
 # AUC for a binary classifier
@@ -172,7 +173,7 @@ def to_html(test_result, flags):
         </style>
         <table class="tg">
           <tr>
-            <th class="tg-s6z2" colspan="2" rowspan="2">%ds(num)</th>
+            <th class="tg-s6z2" colspan="2" rowspan="2">%d</th>
             <th class="tg-431l" colspan="2">Prediction</th>
             <th class="tg-804w" rowspan="2">Recall</th>
           </tr>
@@ -183,21 +184,21 @@ def to_html(test_result, flags):
           <tr>
             <td class="tg-431l" rowspan="2">Label</td>
             <td class="tg-szxb">0</td>
-            <td class="tg-s6z2">%ds(num)</td>
-            <td class="tg-s6z2">%ds(num)</td>
+            <td class="tg-s6z2">%d</td>
+            <td class="tg-s6z2">%d</td>
             <td class="tg-baqh"></td>
           </tr>
           <tr>
             <td class="tg-szxb">1</td>
-            <td class="tg-s6z2">%ds(num)</td>
-            <td class="tg-s6z2">%ds(num)</td>
-            <td class="tg-baqh">%ds(num)</td>
+            <td class="tg-s6z2">%d</td>
+            <td class="tg-s6z2">%d</td>
+            <td class="tg-baqh">%.4f</td>
           </tr>
           <tr>
             <td class="tg-804w" colspan="2">Precision</td>
             <td class="tg-baqh"></td>
-            <td class="tg-baqh">%ds(num)</td>
-            <td class="tg-baqh">%ds(num)</td>
+            <td class="tg-baqh">%.4f</td>
+            <td class="tg-baqh">%.4f</td>
           </tr>
         </table>
     """ % (total, TN, FP, FN, TP, recall, precision, accuracy)
@@ -209,24 +210,34 @@ def to_html(test_result, flags):
     f.close()
 
 
-def evaluate(flags, model, x_test, y_test, max_sentence_length, index2word):
+def evaluate(model, x_test, y_test, max_sentence_length, index2word):
     # Evaluate the model¶
-    loss_test, acc_test, auc_test = model.evaluate(x_test, y_test, batch_size=flags.batch_size)
+    test_result = {
+        'prediction': [],
+        'label': [],
+        'sentence': [],
+    }
 
-    test_result = []
-    for x, y in zip(x_test, y_test):
+    # Initialize a progressbar.
+    widgets = [progressbar.Percentage(), progressbar.Bar()]
+    bar = progressbar.ProgressBar(widgets=widgets, max_value=(len(x_test) + 1)).start()
+    for i, (x, y) in enumerate(zip(x_test, y_test)):
         x = x.reshape(1, max_sentence_length)
         y_prediction = model.predict(x)[0][0]
         sentence = " ".join([index2word[word] for word in x[0].tolist() if word != 0])
-        test_result.append({
-            'prediction': y_prediction,
-            'label': y,
-            'sentence': sentence,
-        })
+        test_result['prediction'].append(y_prediction)
+        test_result['label'].append(y)
+        test_result['sentence'].append(sentence)
+
+        # Update the progressbar.
+        bar.update(i + 1)
+
+    # Finish the progressbar.
+    bar.finish()
 
     test_result = pd.DataFrame(test_result)
 
-    return test_result, loss_test, acc_test, auc_test
+    return test_result
 
 
 def run_training(flags, sentences, targets):
@@ -246,12 +257,12 @@ def run_training(flags, sentences, targets):
     # Define a model.
     model = get_model(flags, vocabulary_size, max_sentence_length, embedding_matrix)
 
-    # Teach the model.
+    # Teach the model. (x_test, y_test)
     model.fit(x_train, y_train, batch_size=flags.batch_size, epochs=flags.num_epochs,
-              validation_data=(x_test, y_test))
+              validation_data=None)
 
     # Evaluate the model.
-    test_result, loss_test, acc_test, auc_test = evaluate(flags, model, x_test, y_test, max_sentence_length, index2word)
+    test_result = evaluate(model, x_test, y_test, max_sentence_length, index2word)
 
     # Save the test result as an excel file.
     to_excel(test_result, flags.excel_dir,
@@ -261,4 +272,4 @@ def run_training(flags, sentences, targets):
 
     to_html(test_result, flags)
 
-    print("Test loss: %.3f, accuracy: %.3f, auc: %.3f" % (loss_test, acc_test, auc_test))
+    # print("Test loss: %.3f, accuracy: %.3f, auc: %.3f" % (loss_test, acc_test, auc_test))

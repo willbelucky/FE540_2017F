@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--dropout',
         type=float,
-        default=0.2,
+        default=0.4,
         help='The dropout rate, between 0 and 1. E.g. "rate=0.1" would drop out 10% of input units.'
     )
     parser.add_argument(
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_epochs',
         type=int,
-        default=2,
+        default=1,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(

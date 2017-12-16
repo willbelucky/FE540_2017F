@@ -6,3 +6,19 @@
 # Data file
 *.csv
 *.h5
+
+# Result file
+*.excels
+*.png
+*.html
+
+.DS_Store
+data/.DS_Store
+quantitative_behavior/excels/
+quantitative_behavior/htmls/
+quantitative_behavior/images/
+quantitative_behavior/logs/
+word2vec/excels/
+word2vec/htmls/
+word2vec/images/
+word2vec/logs/
