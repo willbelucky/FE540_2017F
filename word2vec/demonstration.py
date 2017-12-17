@@ -33,7 +33,7 @@ def main(_):
     if not tf.gfile.Exists(FLAGS.html_dir):
         tf.gfile.MakeDirs(FLAGS.html_dir)
     sentences, targets = data_reader()
-    run_training(flags=FLAGS, sentences=sentences, targets=targets)
+    run_training(flags=FLAGS, sentences=sentences, targets=targets, demonstration=True)
 
 
 if __name__ == '__main__':
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_epochs',
         type=int,
-        default=10,
+        default=2,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--test_rate',
         type=float,
-        default=0.25,
+        default=0.0,
         help='Test rate. The portion of test set.'
     )
     parser.add_argument(
