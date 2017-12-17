@@ -118,9 +118,8 @@ def get_model(flags, vocabulary_size, max_sentence_length, embedding_matrix):
         model.add(Dropout(flags.dropout))
         model.add(LSTM(flags.hidden_unit))
     model.add(Dense(1, activation='sigmoid'))
-    model.add(Activation('softmax'))
     model.compile(loss='binary_crossentropy', optimizer='rmsprop',
-                  metrics=[metrics.binary_accuracy])
+                  metrics=[metrics.binary_accuracy, auc])
 
     print(model.summary())
 

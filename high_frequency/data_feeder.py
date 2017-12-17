@@ -15,6 +15,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
+from tqdm import tqdm
 
 from data_dealer.data_reader import get_stock_minute_prices, get_stock_master
 
@@ -168,7 +169,7 @@ def to_recurrent_data(data_sets, time_step):
 
 def dataframe_to_recurrent_ndarray(x, time_step):
     recurrent_panel = []
-    for i in range(0, len(x) - time_step):
+    for i in tqdm(range(0, len(x) - time_step)):
         recurrent_frame = []
         for index, values in x[i:i + time_step].iterrows():
             recurrent_frame.append(np.asarray(values))
@@ -178,6 +179,7 @@ def dataframe_to_recurrent_ndarray(x, time_step):
     return np.asarray(recurrent_panel)
 
 
+# noinspection PyUnresolvedReferences
 def read_data(company_code,
               test_start_date=datetime(2017, 8, 1),
               shuffle=True,
@@ -186,6 +188,10 @@ def read_data(company_code,
               seed=None):
     stock_masters = get_stock_master(company_code)
     stock_minute_prices = get_stock_minute_prices(stock_masters)
+    stock_minute_prices.loc[:, 'next_close'] = stock_minute_prices['close'].shift(-1)
+    stock_minute_prices.loc[:, 'label'] = (stock_minute_prices['close'] < stock_minute_prices['next_close']).astype(int)
+    stock_minute_prices = stock_minute_prices.drop(columns=['next_close'])
+    stock_minute_prices = stock_minute_prices.dropna()
 
     assert len(stock_minute_prices) > 0
 
