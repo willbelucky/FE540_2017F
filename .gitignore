@@ -12,6 +12,9 @@
 *.png
 *.html
 
+# Log file
+*/logs/*
+
 .DS_Store
 data/.DS_Store
 quantitative_behavior/excels/

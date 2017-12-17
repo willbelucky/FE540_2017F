@@ -16,7 +16,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
 
-from data_dealer.data_reader import get_quantitative_behaviors
+from data_dealer.data_reader import get_stock_minute_prices, get_stock_master
 
 DATASETS = collections.namedtuple('Datasets', ['train', 'test', 'column_number', 'class_number', 'batch_size'])
 
@@ -178,31 +178,33 @@ def dataframe_to_recurrent_ndarray(x, time_step):
     return np.asarray(recurrent_panel)
 
 
-def read_data(test_start_date=datetime(2017, 8, 1),
+def read_data(company_code,
+              test_start_date=datetime(2017, 8, 1),
               shuffle=True,
               batch_size=100,
               dtype=dtypes.float32,
               seed=None):
-    quantitative_behaviors = get_quantitative_behaviors()
+    stock_masters = get_stock_master(company_code)
+    stock_minute_prices = get_stock_minute_prices(stock_masters)
 
-    assert len(quantitative_behaviors) > 0
+    assert len(stock_minute_prices) > 0
 
     if shuffle:
-        quantitative_behaviors = quantitative_behaviors.sample(frac=1)
+        stock_minute_prices = stock_minute_prices.sample(frac=1)
 
-    column_number = len(quantitative_behaviors.columns) - 1
-    units = quantitative_behaviors.loc[:, quantitative_behaviors.columns != 'label']
+    column_number = len(stock_minute_prices.columns) - 1
+    units = stock_minute_prices.loc[:, stock_minute_prices.columns != 'label']
     units = pd.DataFrame(MinMaxScaler().fit_transform(units))
-    quantitative_behaviors = quantitative_behaviors.reset_index()
-    labels = quantitative_behaviors.loc[:, ['label']]
-    dates = quantitative_behaviors.loc[:, ['date']]
+    stock_minute_prices = stock_minute_prices.reset_index()
+    labels = stock_minute_prices.loc[:, ['label']]
+    dates = stock_minute_prices.loc[:, ['date']]
 
-    train_units = units[quantitative_behaviors['date'] < test_start_date]
-    train_labels = labels[quantitative_behaviors['date'] < test_start_date]['label']
-    train_dates = dates[quantitative_behaviors['date'] < test_start_date]['date']
-    test_units = units[quantitative_behaviors['date'] >= test_start_date]
-    test_labels = labels[quantitative_behaviors['date'] >= test_start_date]['label']
-    test_dates = dates[quantitative_behaviors['date'] >= test_start_date]['date']
+    train_units = units[stock_minute_prices['date'] < test_start_date]
+    train_labels = labels[stock_minute_prices['date'] < test_start_date]['label']
+    train_dates = dates[stock_minute_prices['date'] < test_start_date]['date']
+    test_units = units[stock_minute_prices['date'] >= test_start_date]
+    test_labels = labels[stock_minute_prices['date'] >= test_start_date]['label']
+    test_dates = dates[stock_minute_prices['date'] >= test_start_date]['date']
 
     options = dict(dtype=dtype, seed=seed, column_number=column_number, class_number=2, batch_size=batch_size)
 
