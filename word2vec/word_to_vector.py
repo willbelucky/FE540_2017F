@@ -12,6 +12,7 @@ import tensorflow as tf
 from gensim.models import Word2Vec
 from keras.layers import Dense, LSTM, Activation, Embedding, Dropout
 from keras.models import Sequential
+from keras import metrics
 from keras.preprocessing import sequence
 from sklearn.model_selection import train_test_split
 import progressbar
@@ -110,15 +111,16 @@ def get_model(flags, vocabulary_size, max_sentence_length, embedding_matrix):
     model.add(Embedding(vocabulary_size, flags.embedding_size,
                         input_length=max_sentence_length,
                         weights=[embedding_matrix],
-                        mask_zero=True, trainable=False))
+                        mask_zero=True))
     if flags.dropout is None:
         model.add(LSTM(flags.hidden_unit))
     else:
         model.add(Dropout(flags.dropout))
         model.add(LSTM(flags.hidden_unit))
     model.add(Dense(1, activation='sigmoid'))
-    model.add(Activation('sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy', auc])
+    model.add(Activation('softmax'))
+    model.compile(loss='binary_crossentropy', optimizer='rmsprop',
+                  metrics=[metrics.binary_accuracy])
 
     print(model.summary())
 
@@ -143,10 +145,12 @@ def to_html(test_result, flags):
     recall = TP / (TP + FN + 1e-20)  # 실제 1인것들 중에서 예측결과가 1인 것의 비중
     accuracy = (TP + TN) / (TP + TN + FP + FN)  # 정확히 예측(즉, 1을 1이라고, 0을 0이라고 예측)한 것의 비중
 
-    f = open(flags.html_dir + 'test_result_{}_{}_{}_{}_{}.html'.format(flags.embedding_size, flags.batch_size,
-                                                                       flags.num_epochs,
-                                                                       flags.dropout,
-                                                                       flags.hidden_unit), 'w')
+    f = open(flags.html_dir + 'test_result_{}_{}_{}_{}_{}_{}'.format(flags.learning_rate,
+                                                                     flags.embedding_size,
+                                                                     flags.batch_size,
+                                                                     flags.num_epochs,
+                                                                     flags.dropout,
+                                                                     flags.hidden_unit), 'w')
 
     html_header = '<!DOCTYPE html>' \
                   '<meta charset="utf-8">' \
@@ -210,7 +214,7 @@ def to_html(test_result, flags):
     f.close()
 
 
-def evaluate(model, x_test, y_test, max_sentence_length, index2word):
+def evaluate(flags, model, x_test, y_test, index2word):
     # Evaluate the model¶
     test_result = {
         'prediction': [],
@@ -220,17 +224,26 @@ def evaluate(model, x_test, y_test, max_sentence_length, index2word):
 
     # Initialize a progressbar.
     widgets = [progressbar.Percentage(), progressbar.Bar()]
-    bar = progressbar.ProgressBar(widgets=widgets, max_value=(len(x_test) + 1)).start()
-    for i, (x, y) in enumerate(zip(x_test, y_test)):
-        x = x.reshape(1, max_sentence_length)
-        y_prediction = model.predict(x)[0][0]
-        sentence = " ".join([index2word[word] for word in x[0].tolist() if word != 0])
-        test_result['prediction'].append(y_prediction)
-        test_result['label'].append(y)
-        test_result['sentence'].append(sentence)
+    bar = progressbar.ProgressBar(widgets=widgets, max_value=(len(x_test) // flags.batch_size + 1)).start()
+    index = 0
+    while x_test.size != 0:
+        index += 1
+
+        x_test, y_test, x_batch, y_batch = next_test_batch(flags.batch_size, x_test, y_test)
+
+        y_predictions = [prediction[0] for prediction in model.predict(x_batch, batch_size=flags.batch_size)]
+        sentences = [" ".join([index2word[word] for word in x if word != 0]) for x in x_batch]
+
+        assert len(y_predictions) == len(x_batch)
+        assert len(x_batch) == len(sentences)
+
+        # test_result['prediction'].extend([np.where(y_prediction > 1.0, 1, 0) for y_prediction in y_predictions])
+        test_result['prediction'].extend(y_predictions)
+        test_result['label'].extend(y_batch)
+        test_result['sentence'].extend(sentences)
 
         # Update the progressbar.
-        bar.update(i + 1)
+        bar.update(index)
 
     # Finish the progressbar.
     bar.finish()
@@ -240,12 +253,38 @@ def evaluate(model, x_test, y_test, max_sentence_length, index2word):
     return test_result
 
 
-def run_training(flags, sentences, targets):
+def next_test_batch(num, x_test, y_test):
+    """
+    Return a total of `num` random samples and labels, and delete x_batch and y_batch
+    from original x_test and y_test.
+    """
+    original_len = len(x_test)
+
+    idx = np.arange(0, len(x_test))
+    np.random.shuffle(idx)
+    idx = idx[:min(num, len(x_test))]
+    x_batch = np.asarray([x_test[i] for i in idx])
+    y_batch = np.asarray([y_test[i] for i in idx])
+
+    idx.sort()
+    idx = idx[::-1]
+    for i in idx:
+        x_test = np.delete(x_test, i, axis=0)
+        y_test = np.delete(y_test, i, axis=0)
+
+    current_len = len(x_test)
+    assert original_len == current_len + len(idx)
+
+    return x_test, y_test, x_batch, y_batch
+
+
+def run_training(flags, sentences, targets, demonstration=False):
     """
 
     :param flags:
     :param sentences: (List[List[str]]) A list of words. Words is a list of word.
     :param targets: (List[int]) A list of target, 0 or 1. 0 means a negative profit and 1 means a positive profit.
+    :param demonstration:
     """
     max_sentence_length, sentence_number, vocabulary_size = count_sentences(sentences)
     embedding_matrix, index2word, word2index = get_embedding_matrix(sentences, flags.embedding_size)
@@ -259,17 +298,45 @@ def run_training(flags, sentences, targets):
 
     # Teach the model. (x_test, y_test)
     model.fit(x_train, y_train, batch_size=flags.batch_size, epochs=flags.num_epochs,
-              validation_data=None)
+              validation_data=(x_test, y_test))
 
-    # Evaluate the model.
-    test_result = evaluate(model, x_test, y_test, max_sentence_length, index2word)
+    if demonstration:
+        while True:
+            try:
+                input_sentence = input()
+                input_words = input_sentence.split()
 
-    # Save the test result as an excel file.
-    to_excel(test_result, flags.excel_dir,
-             'test_result_{}_{}_{}_{}_{}'.format(flags.embedding_size, flags.batch_size, flags.num_epochs,
-                                                 flags.dropout,
-                                                 flags.hidden_unit))
+                indexed_words = []
+                for word in input_words:
+                    if word in word2index:
+                        indexed_words.append(word2index[word])
 
-    to_html(test_result, flags)
+                # If indexed_words is longer than max_sentence_length, delete words after max_sentence_length.
+                if len(indexed_words) > max_sentence_length:
+                    indexed_words = indexed_words[:max_sentence_length]
+                else:
+                    while len(indexed_words) != max_sentence_length:
+                        indexed_words.append(0)
 
-    # print("Test loss: %.3f, accuracy: %.3f, auc: %.3f" % (loss_test, acc_test, auc_test))
+                indexed_words = np.asarray(indexed_words)
+                indexed_words = indexed_words.reshape(1, max_sentence_length)
+                predict_results = model.predict(indexed_words)
+                y_prediction = keras.round(predict_results[0][0])
+                if y_prediction == 1:
+                    print("Up, {}".format(predict_results))
+                else:
+                    print("Down, {}".format(predict_results))
+            except Exception as e:
+                print("Exception: {}".format(e))
+    else:
+        # Evaluate the model.
+        test_result = evaluate(flags, model, x_test, y_test, index2word)
+
+        # Save the test result as an excel file.
+        to_excel(test_result, flags.excel_dir,
+                 'test_result_{}_{}_{}_{}_{}_{}'.format(flags.learning_rate, flags.embedding_size, flags.batch_size,
+                                                        flags.num_epochs,
+                                                        flags.dropout,
+                                                        flags.hidden_unit))
+
+        to_html(test_result, flags)
