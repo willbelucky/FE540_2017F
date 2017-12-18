@@ -7,14 +7,17 @@ import argparse
 import os
 import sys
 from datetime import datetime
+from tqdm import tqdm
 
 import tensorflow as tf
 
-from high_frequency.classifying_lstm import run_training
-from high_frequency.data_feeder import read_data
+from high_frequency_profit.classifying_lstm import run_training
+from high_frequency_profit.data_feeder import read_data
 from data_dealer.data_reader import get_stock_masters
 
 FLAGS = None
+
+FOLDER_DIR = 'high_frequency_profit/'
 
 
 def main(_):
@@ -30,9 +33,10 @@ def main(_):
 
     if FLAGS.company_codes is None:
         stock_masters = get_stock_masters()
-        for company_code in stock_masters.index.values:
+        for company_code, values in tqdm(stock_masters.iterrows()):
             try:
-                run_training(flags=FLAGS,
+                run_training(values[0],
+                             flags=FLAGS,
                              data_sets=read_data(company_code=company_code,
                                                  test_start_date=datetime(2017, 8, 1),
                                                  shuffle=False,
@@ -40,8 +44,10 @@ def main(_):
             except AssertionError as ae:
                 print(ae)
     else:
-        for company_code in FLAGS.company_codes:
-            run_training(flags=FLAGS,
+        stock_masters = get_stock_masters(FLAGS.company_codes)
+        for company_code, values in tqdm(stock_masters.iterrows()):
+            run_training(values[0],
+                         flags=FLAGS,
                          data_sets=read_data(company_code=company_code,
                                              test_start_date=datetime(2017, 8, 1),
                                              shuffle=False,
@@ -54,7 +60,7 @@ if __name__ == '__main__':
         '--company_codes',
         nargs='+',
         type=str,
-        default=None,
+        default=['005930'],
         help='Codes of companies.'
     )
     parser.add_argument(
@@ -78,7 +84,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--time_step',
         type=int,
-        default=1000,
+        default=60,
         help='Number of time window.'
     )
     parser.add_argument(
@@ -97,25 +103,25 @@ if __name__ == '__main__':
     parser.add_argument(
         '--image_dir',
         type=str,
-        default=os.path.join(os.getcwd(), 'high_frequency/images/'),
+        default=os.path.join(os.getcwd(), FOLDER_DIR + 'images/'),
         help='Directory to put the image.'
     )
     parser.add_argument(
         '--excel_dir',
         type=str,
-        default=os.path.join(os.getcwd(), 'high_frequency/excels/'),
+        default=os.path.join(os.getcwd(), FOLDER_DIR + 'excels/'),
         help='Directory to put the excel file.'
     )
     parser.add_argument(
         '--html_dir',
         type=str,
-        default=os.path.join(os.getcwd(), 'high_frequency/htmls/'),
+        default=os.path.join(os.getcwd(), FOLDER_DIR + 'htmls/'),
         help='Directory to put the html file.'
     )
     parser.add_argument(
         '--log_dir',
         type=str,
-        default=os.path.join(os.getcwd(), 'high_frequency/logs/fully_connected_feed'),
+        default=os.path.join(os.getcwd(), FOLDER_DIR + 'logs/fully_connected_feed'),
         help='Directory to put the log data.'
     )
 

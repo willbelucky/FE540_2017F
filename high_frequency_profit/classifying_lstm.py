@@ -9,12 +9,14 @@ from __future__ import print_function
 
 import math
 import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
+import matplotlib
 import pandas as pd
 import tensorflow as tf
 
-from quantitative_behavior.data_feeder import to_recurrent_data
+from high_frequency_profit.data_feeder import to_recurrent_data
 
 
 def lstm_cell(hidden_unit, dropout):
@@ -196,8 +198,18 @@ def to_excel(dataframe, dir, file_name):
     dataframe.to_excel(writer)
 
 
-def run_training(flags, data_sets):
+def run_training(company_name, flags, data_sets):
     """Train mnist_example for a number of steps."""
+
+    file_name = 'test_result_{}_{}_{}_{}_{}_{}'.format(company_name,
+                                                       flags.learning_rate,
+                                                       flags.dropout,
+                                                       flags.max_steps,
+                                                       flags.time_step,
+                                                       flags.hidden_units)
+    if Path(flags.image_dir + file_name + '.png').exists():
+        return
+
     data_sets = to_recurrent_data(data_sets, flags.time_step)
 
     # Tell TensorFlow that the model will be built into the default Graph.
@@ -288,24 +300,16 @@ def run_training(flags, data_sets):
         # Save the test result as an excel file.
         test_result = pd.DataFrame(results)
         test_result = test_result.set_index(keys=['step'])
-        to_excel(test_result, flags.excel_dir, 'test_result_{}_{}_{}_{}_{}'.format(flags.learning_rate,
-                                                                                   flags.dropout,
-                                                                                   flags.max_steps,
-                                                                                   flags.time_step,
-                                                                                   flags.hidden_units))
+        to_excel(test_result, flags.excel_dir, file_name)
 
         # draw a test graph
-        # matplotlib.rc('font', family='NanumBarunGothicOTF')
+        matplotlib.rc('font', family='NanumBarunGothicOTF')
         fig, ax = plt.subplots()
         ax.plot(test_result['train_accuracy'], 'k', label='train', linewidth=1)
         ax.plot(test_result['test_accuracy'], 'r', label='test', linewidth=1)
         ax.legend()
-
+        plt.title(company_name)
         plt.xlabel('step')
         plt.ylabel('accuracy')
-        plt.savefig(flags.image_dir + 'test_result_{}_{}_{}_{}_{}.png'.format(flags.learning_rate,
-                                                                              flags.dropout,
-                                                                              flags.max_steps,
-                                                                              flags.time_step,
-                                                                              flags.hidden_units))
+        plt.savefig(flags.image_dir + file_name + '.png')
         plt.close()
