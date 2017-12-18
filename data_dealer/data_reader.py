@@ -19,9 +19,12 @@ STOCK_MINUTE_PRICE_TABLE = 'stock_minute_price'
 STOCK_VOLUME_TABLE = 'stock_volume'
 NAVER_FINANCE_FORUM_TABLE = 'naver_finance_forum'
 NAVER_FINANCE_FORUM_STAT_TABLE = 'naver_finance_forum_stat'
-TITLE_TABLE = 'title'
+PROFIT_TITLE_TABLE = 'profit_title'
+VOLATILITY_TITLE_TABLE = 'volatility_title'
 WORD_PACK_TABLE = 'word_pack'
 QUANTITATIVE_BEHAVIOR_TABLE = 'quantitative_behavior'
+HIGH_FREQUENCY_VOLATILITY = 'high_frequency_volatility'
+HIGH_FREQUENCY_PROFIT = 'high_frequency_profit'
 
 CACHE = {
     STOCK_MASTER_TABLE: None,
@@ -30,9 +33,12 @@ CACHE = {
     STOCK_VOLUME_TABLE: None,
     NAVER_FINANCE_FORUM_TABLE: None,
     NAVER_FINANCE_FORUM_STAT_TABLE: None,
-    TITLE_TABLE: None,
+    PROFIT_TITLE_TABLE: None,
+    VOLATILITY_TITLE_TABLE: None,
     WORD_PACK_TABLE: None,
     QUANTITATIVE_BEHAVIOR_TABLE: None,
+    HIGH_FREQUENCY_VOLATILITY: None,
+    HIGH_FREQUENCY_PROFIT: None,
 }
 
 # Set your working directory FE540_2017F.
@@ -205,18 +211,32 @@ def _get_word_pack_table() -> DataFrame or None:
     return word_pack
 
 
-def _get_title_table() -> DataFrame or None:
+def _get_profit_title_table() -> DataFrame or None:
     """
 
-    :return titles: (DataFrame)
+    :return profit_titles: (DataFrame)
         index   code    | (str) 6 digits number string representing a company.
                 date    | (datetime) The created date and time.
                 writer  | (str) The writer of the forum.
         column  title   | (str) The title.
                 label   | (int) If stock profit is positive, label is 1, else label is 0.
     """
-    titles = get_cached_table(TITLE_TABLE, index=['code', 'date', 'writer'], parse_dates=['date'])
-    return titles
+    profit_titles = get_cached_table(PROFIT_TITLE_TABLE, index=['code', 'date', 'writer'], parse_dates=['date'])
+    return profit_titles
+
+
+def _get_volatility_title_table() -> DataFrame or None:
+    """
+
+    :return volatility_titles: (DataFrame)
+        index   code    | (str) 6 digits number string representing a company.
+                date    | (datetime) The created date and time.
+                writer  | (str) The writer of the forum.
+        column  title   | (str) The title.
+                label   | (int) If stock profit is positive, label is 1, else label is 0.
+    """
+    volatility_titles = get_cached_table(VOLATILITY_TITLE_TABLE, index=['code', 'date', 'writer'], parse_dates=['date'])
+    return volatility_titles
 
 
 def _get_quantitative_behavior_table() -> DataFrame or None:
@@ -275,8 +295,46 @@ def _get_quantitative_behavior_table() -> DataFrame or None:
                 count_20/60         | (float) The number of posts.
                 label               | (int) If stock profit is positive, label is 1, else label is 0.
     """
-    titles = get_cached_table(QUANTITATIVE_BEHAVIOR_TABLE, index=['code', 'date'], parse_dates=['date'])
-    return titles
+    quantitative_behaviors = get_cached_table(QUANTITATIVE_BEHAVIOR_TABLE, index=['code', 'date'], parse_dates=['date'])
+    return quantitative_behaviors
+
+
+def _get_high_frequency_volatility_table() -> DataFrame or None:
+    """
+
+    :return high_frequency_volatilities: (DataFrame)
+        index   code            | (str) 6 digits number string representing a company.
+                date            | (datetime) The created date.
+        column  volume          | (int) The number of traded stocks of a day.
+                open            | (int) The first price of a day.
+                high            | (int) The highest price of a day.
+                low             | (int) The lowest price of a day.
+                close           | (int) The final price of a day.
+                volatility      | (float) The volatility of 5 minutes.
+                label           | (float) The next 5 minutes volatility.
+    """
+    high_frequency_volatilities = get_cached_table(HIGH_FREQUENCY_VOLATILITY, index=['code', 'date'],
+                                                   parse_dates=['date'])
+    return high_frequency_volatilities
+
+
+def _get_high_frequency_profit_table() -> DataFrame or None:
+    """
+
+    :return high_frequency_profits: (DataFrame)
+        index   code            | (str) 6 digits number string representing a company.
+                date            | (datetime) The created date.
+        column  volume          | (int) The number of traded stocks of a day.
+                open            | (int) The first price of a day.
+                high            | (int) The highest price of a day.
+                low             | (int) The lowest price of a day.
+                close           | (int) The final price of a day.
+                label           | (int) If the current close price is lower than the next close price,
+                                        a label is 1. Else, a label is 0.
+    """
+    high_frequency_profits = get_cached_table(HIGH_FREQUENCY_PROFIT, index=['code', 'date'],
+                                              parse_dates=['date'])
+    return high_frequency_profits
 
 
 def get_stock_master(code: str) -> DataFrame:
@@ -456,18 +514,44 @@ def get_word_pack():
     return word_pack
 
 
-def get_titles():
+def get_profit_titles(stock_masters: DataFrame = None, from_date: datetime = datetime(2016, 11, 1),
+                      to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
     """
 
-    :return titles: (DataFrame)
+    :return profit_titles: (DataFrame)
         index   code    | (str) 6 digits number string representing a company.
                 date    | (datetime) The created date and time.
                 writer  | (str) The writer of the forum.
         column  title   | (str) The title.
                 label   | (int) If stock profit is positive, label is 1, else label is 0.
     """
-    titles = _get_title_table()
-    return titles
+    _to_date = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
+    profit_titles = _get_profit_title_table()
+    if stock_masters is None:
+        profit_titles = profit_titles.loc[idx[:, from_date:_to_date, :], :]
+    else:
+        profit_titles = profit_titles.loc[idx[stock_masters.index.values, from_date:_to_date, :], :]
+    return profit_titles
+
+
+def get_volatility_titles(stock_masters: DataFrame = None, from_date: datetime = datetime(2016, 11, 1),
+                          to_date: datetime = datetime(2017, 10, 31)) -> DataFrame:
+    """
+
+    :return volatility_titles: (DataFrame)
+        index   code    | (str) 6 digits number string representing a company.
+                date    | (datetime) The created date and time.
+                writer  | (str) The writer of the forum.
+        column  title   | (str) The title.
+                label   | (int) If stock profit is positive, label is 1, else label is 0.
+    """
+    _to_date = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
+    volatility_titles = _get_volatility_title_table()
+    if stock_masters is None:
+        volatility_titles = volatility_titles.loc[idx[:, from_date:_to_date, :], :]
+    else:
+        volatility_titles = volatility_titles.loc[idx[stock_masters.index.values, from_date:_to_date, :], :]
+    return volatility_titles
 
 
 def get_quantitative_behaviors():
@@ -528,3 +612,21 @@ def get_quantitative_behaviors():
     """
     quantitative_behaviors = _get_quantitative_behavior_table()
     return quantitative_behaviors
+
+
+def get_high_frequency_volatilities():
+    """
+
+    :return high_frequency_volatilities: (DataFrame)
+        index   code            | (str) 6 digits number string representing a company.
+                date            | (datetime) The created date.
+        column  volume          | (int) The number of traded stocks of a day.
+                open            | (int) The first price of a day.
+                high            | (int) The highest price of a day.
+                low             | (int) The lowest price of a day.
+                close           | (int) The final price of a day.
+                volatility      | (float) The volatility of 5 minutes.
+                label           | (float) The next 5 minutes volatility.
+    """
+    high_frequency_volatilities = _get_high_frequency_volatility_table()
+    return high_frequency_volatilities

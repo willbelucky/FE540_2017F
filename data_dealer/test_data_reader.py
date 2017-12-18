@@ -11,14 +11,15 @@ from data_dealer.data_reader import *
 # noinspection PyProtectedMember
 from data_dealer.data_reader import _get_stock_master_table, _get_stock_price_table, _get_naver_finance_forum_table, \
     _get_naver_finance_forum_stat_table, _get_word_pack_table, _get_stock_minute_price_table, _get_stock_volume_table, \
-    _get_title_table, _get_quantitative_behavior_table
+    _get_profit_title_table, _get_quantitative_behavior_table, _get_volatility_title_table, \
+    _get_high_frequency_volatility_table, _get_high_frequency_profit_table
 
 
 class TestDataReader(TestCase):
     def test_get_stock_master_table(self):
         stock_masters = _get_stock_master_table()
         self.assertIsNotNone(stock_masters)
-        self.assertEqual(2061, len(stock_masters))
+        self.assertEqual(2060, len(stock_masters))
         testing.assert_array_equal(['code'], stock_masters.index.names)
         testing.assert_array_equal(['name'], stock_masters.columns.values)
 
@@ -34,7 +35,7 @@ class TestDataReader(TestCase):
     def test_get_stock_minute_price_table(self):
         stock_minute_prices = _get_stock_minute_price_table()
         self.assertIsNotNone(stock_minute_prices)
-        self.assertEqual(65518652, len(stock_minute_prices))
+        self.assertEqual(65119728, len(stock_minute_prices))
         testing.assert_array_equal(['code', 'date'], stock_minute_prices.index.names)
         testing.assert_array_equal(['open', 'high', 'low', 'close', 'volume'],
                                    stock_minute_prices.columns.values)
@@ -70,19 +71,25 @@ class TestDataReader(TestCase):
         self.assertEqual(19733406, len(word_pack))
         testing.assert_array_equal(['code', 'date', 'word', 'writer'], word_pack.columns.values)
 
-    def test_get_title_table(self):
-        titles = _get_title_table()
-        self.assertIsNotNone(titles)
-        self.assertEqual(2272354, len(titles))
-        testing.assert_array_equal(['code', 'date', 'writer'], titles.index.names)
-        testing.assert_array_equal(['title', 'label'], titles.columns.values)
+    def test_get_profit_title_table(self):
+        profit_titles = _get_profit_title_table()
+        self.assertIsNotNone(profit_titles)
+        self.assertEqual(2272354, len(profit_titles))
+        testing.assert_array_equal(['code', 'date', 'writer'], profit_titles.index.names)
+        testing.assert_array_equal(['title', 'label'], profit_titles.columns.values)
+
+    def test_get_volatility_title_table(self):
+        volatility_titles = _get_volatility_title_table()
+        self.assertIsNotNone(volatility_titles)
+        self.assertEqual(1212757, len(volatility_titles))
+        testing.assert_array_equal(['code', 'date', 'writer'], volatility_titles.index.names)
+        testing.assert_array_equal(['title', 'label'], volatility_titles.columns.values)
 
     def test_get_quantitative_behavior_table(self):
         quantitative_behaviors = _get_quantitative_behavior_table()
         self.assertIsNotNone(quantitative_behaviors)
         self.assertEqual(362916, len(quantitative_behaviors))
         testing.assert_array_equal(['code', 'date'], quantitative_behaviors.index.names)
-        print(quantitative_behaviors.columns.values)
         testing.assert_array_equal(['adj_close_1/5', 'personal_1/5', 'national_1/5', 'investment_1/5',
                                     'total_institution_1/5', 'other_finance_1/5', 'other_corporation_1/5',
                                     'other_foreign_1/5', 'foreign_1/5', 'insurance_1/5', 'pef_1/5', 'pension_1/5',
@@ -96,6 +103,22 @@ class TestDataReader(TestCase):
                                     'other_foreign_20/60', 'foreign_20/60', 'insurance_20/60', 'pef_20/60',
                                     'pension_20/60', 'total_foreign_20/60', 'bank_20/60', 'trust_20/60',
                                     'count_20/60', 'label'], quantitative_behaviors.columns.values)
+
+    def test_get_high_frequency_volatility_table(self):
+        high_frequency_volatilities = _get_high_frequency_volatility_table()
+        self.assertIsNotNone(high_frequency_volatilities)
+        self.assertEqual(46974483, len(high_frequency_volatilities))
+        testing.assert_array_equal(['code', 'date'], high_frequency_volatilities.index.names)
+        testing.assert_array_equal(['open', 'high', 'low', 'close', 'volume', 'volatility', 'label'],
+                                   high_frequency_volatilities.columns.values)
+
+    def test_get_high_frequency_profit_table(self):
+        high_frequency_profits = _get_high_frequency_profit_table()
+        self.assertIsNotNone(high_frequency_profits)
+        self.assertEqual(46974483, len(high_frequency_profits))
+        testing.assert_array_equal(['code', 'date'], high_frequency_profits.index.names)
+        testing.assert_array_equal(['open', 'high', 'low', 'close', 'volume', 'label'],
+                                   high_frequency_profits.columns.values)
 
     def test_get_stock_master(self):
         code = get_stock_masters().sample(1).index.values[0]
@@ -114,7 +137,7 @@ class TestDataReader(TestCase):
     def test_get_all_stock_masters(self):
         stock_masters = get_stock_masters()
         self.assertIsNotNone(stock_masters)
-        self.assertEqual(2061, len(stock_masters))
+        self.assertEqual(2060, len(stock_masters))
 
     def test_get_stock_prices(self):
         stock_masters = get_stock_masters().sample(10)
@@ -133,7 +156,7 @@ class TestDataReader(TestCase):
     def test_get_all_naver_finance_forums(self):
         naver_finance_forums = get_naver_finance_forums()
         self.assertIsNotNone(naver_finance_forums)
-        self.assertEqual(6431219, len(naver_finance_forums))
+        self.assertEqual(6409727, len(naver_finance_forums))
 
     def test_get_naver_finance_forum_stats(self):
         stock_masters = get_stock_master('000040')

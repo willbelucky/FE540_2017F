@@ -8,10 +8,10 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import progressbar
+from tqdm import tqdm
 
 from data_dealer.data_reader import get_naver_finance_forums, get_stock_masters, get_stock_minute_prices, \
-    get_stock_prices, get_naver_finance_forum_stats, get_stock_volumes
+    get_stock_prices, get_naver_finance_forum_stats, get_stock_volumes, get_stock_master
 
 idx = pd.IndexSlice
 
@@ -48,10 +48,10 @@ def calculate_word_pack():
     return word_pack
 
 
-def calculate_titles():
+def calculate_profit_titles():
     """
 
-    :return titles: (DataFrame)
+    :return profit_titles: (DataFrame)
         index   code    | (str) 6 digits number string representing a company.
                 date    | (datetime) The created date and time.
                 writer  | (str) The writer of the forum.
@@ -61,10 +61,7 @@ def calculate_titles():
     stock_masters = get_stock_masters()
     merged_titles = pd.DataFrame()
 
-    # Initialize a progressbar.
-    widgets = [progressbar.Percentage(), progressbar.Bar()]
-    bar = progressbar.ProgressBar(widgets=widgets, max_value=(len(stock_masters) + 1)).start()
-    for i in range(len(stock_masters)):
+    for i in tqdm(range(len(stock_masters))):
         stock_master = stock_masters.iloc[i:i + 1]
         naver_finance_forums = get_naver_finance_forums(stock_master).reset_index()
         stock_minute_prices = get_stock_minute_prices(stock_master).reset_index()
@@ -106,21 +103,61 @@ def calculate_titles():
         # Save new_titles in merged_titles.
         merged_titles = pd.concat([merged_titles, new_titles])
 
-        # Update the progressbar.
-        bar.update(i + 1)
-
-    # Finish the progressbar.
-    bar.finish()
-
     # If current price is lower than next close price, a profit is positive.
     # Then a label is 1. Or the label is 0.
     # noinspection PyUnresolvedReferences
     merged_titles['label'] = (merged_titles['close'] < merged_titles['next_close']).astype(int)
 
     # Use only ['title', 'label'].
-    titles = merged_titles[['title', 'label']]
-    titles = titles.dropna()
-    return titles
+    profit_titles = merged_titles[['title', 'label']]
+    profit_titles = profit_titles.dropna()
+    return profit_titles
+
+
+def calculate_volatility_titles():
+    """
+
+    :return volatility_titles: (DataFrame)
+        index   code    | (str) 6 digits number string representing a company.
+                date    | (datetime) The created date and time.
+                writer  | (str) The writer of the forum.
+        column  title   | (str) The title.
+                label   | (int) If current 5 minutes volatility is lower than next 5 minutes volatility,
+                                a label is 1, else a label is 0.
+    """
+    stock_masters = get_stock_masters()
+    merged_titles = pd.DataFrame()
+
+    for i in tqdm(range(len(stock_masters))):
+        stock_master = stock_masters.iloc[i:i + 1]
+        naver_finance_forums = get_naver_finance_forums(stock_master).reset_index()
+        stock_minute_prices = get_stock_minute_prices(stock_master).reset_index()
+
+        # If there is no stock minute prices of this company, pass.
+        if stock_minute_prices.empty:
+            continue
+
+        # Calculate a 5 minutes volatility and a next 5 minutes volatility.
+        stock_minute_prices.loc[:, 'volatility'] = stock_minute_prices['close'].rolling(window=5).std()
+        stock_minute_prices.loc[:, 'next_volatility'] = stock_minute_prices['volatility'].shift(-5)
+        stock_minute_prices = stock_minute_prices.dropna()
+
+        # Merge naver_finance_forums with stock_minute_prices
+        new_titles = pd.merge(naver_finance_forums, stock_minute_prices, on=['code', 'date'], how='inner')
+        new_titles = new_titles.set_index(['code', 'date', 'writer'])
+
+        # Save new_titles in merged_titles.
+        merged_titles = pd.concat([merged_titles, new_titles])
+
+    # If current 5 minutes volatility is lower than next 5 minutes volatility,
+    # then a label is 1. Or the label is 0.
+    # noinspection PyUnresolvedReferences
+    merged_titles['label'] = (merged_titles['volatility'] < merged_titles['next_volatility']).astype(int)
+
+    # Use only ['title', 'label'].
+    volatility_titles = merged_titles[['title', 'label']]
+    volatility_titles = volatility_titles.dropna()
+    return volatility_titles
 
 
 def divide(dividend, divisor):
@@ -201,10 +238,7 @@ def calculate_quantitative_behaviors():
     MA5_MA20_columns = ['{}_5/20'.format(column) for column in default_columns]
     MA20_MA60_columns = ['{}_20/60'.format(column) for column in default_columns]
 
-    # Initialize a progressbar.
-    widgets = [progressbar.Percentage(), progressbar.Bar()]
-    bar = progressbar.ProgressBar(widgets=widgets, max_value=(len(stock_masters) + 1)).start()
-    for i in range(len(stock_masters)):
+    for i in tqdm(range(len(stock_masters))):
         stock_master = stock_masters.iloc[i:i + 1]
         naver_finance_forum_stats = get_naver_finance_forum_stats(stock_master)
         stock_volumes = get_stock_volumes(stock_master)
@@ -221,6 +255,7 @@ def calculate_quantitative_behaviors():
 
         # Set labels.
         new_quantitative_behaviors['next_close'] = new_quantitative_behaviors['adj_close'].shift(-1)
+        # noinspection PyUnresolvedReferences
         new_quantitative_behaviors['label'] = (
                 new_quantitative_behaviors['adj_close'] < new_quantitative_behaviors['next_close']).astype(int)
 
@@ -245,21 +280,107 @@ def calculate_quantitative_behaviors():
         # Save new_titles in merged_titles.
         merged_quantitative_behaviors = pd.concat([merged_quantitative_behaviors, new_quantitative_behaviors])
 
-        # Update the progressbar.
-        bar.update(i + 1)
-
-    # Finish the progressbar.
-    bar.finish()
-
     return merged_quantitative_behaviors
+
+
+def calculate_high_frequency_volatilities():
+    """
+
+    :return high_frequency_volatilities: (DataFrame)
+        index   code            | (str) 6 digits number string representing a company.
+                date            | (datetime) The created date.
+        column  volume          | (int) The number of traded stocks of a day.
+                open            | (int) The first price of a day.
+                high            | (int) The highest price of a day.
+                low             | (int) The lowest price of a day.
+                close           | (int) The final price of a day.
+                volatility      | (float) The volatility of 5 minutes.
+                label           | (float) The next 5 minutes volatility.
+    """
+    stock_masters = get_stock_masters()
+    high_frequency_volatilities = pd.DataFrame()
+    for i in tqdm(range(len(stock_masters))):
+        stock_master = stock_masters.iloc[i:i + 1]
+        stock_minute_prices = get_stock_minute_prices(stock_master)
+
+        # Calculate 5 minutes volatility.
+        stock_minute_prices.loc[:, 'volatility'] = stock_minute_prices['close'].rolling(window=5).std()
+
+        # Make a 5 minutes later volatility a next_volatility and set it to label.
+        stock_minute_prices.loc[:, 'label'] = stock_minute_prices['volatility'].shift(-5)
+
+        # Drop first 4 rows and last 5 rows.
+        stock_minute_prices = stock_minute_prices.dropna()
+
+        # Merge calculated results of this company to high_frequency_volatilities.
+        high_frequency_volatilities = pd.concat([high_frequency_volatilities, stock_minute_prices])
+
+    # Delete next_volatility column.
+    high_frequency_volatilities = \
+        high_frequency_volatilities.loc[:, high_frequency_volatilities.columns != 'next_volatility']
+
+    return high_frequency_volatilities
+
+
+def calculate_high_frequency_profits():
+    """
+
+    :return high_frequency_profits: (DataFrame)
+        index   code            | (str) 6 digits number string representing a company.
+                date            | (datetime) The created date.
+        column  volume          | (int) The number of traded stocks of a day.
+                open            | (int) The first price of a day.
+                high            | (int) The highest price of a day.
+                low             | (int) The lowest price of a day.
+                close           | (int) The final price of a day.
+                label           | (int) If the current close price is lower than the next close price,
+                                        a label is 1. Else, a label is 0.
+    """
+    stock_masters = get_stock_masters()
+    high_frequency_profits = pd.DataFrame()
+    for i in tqdm(range(len(stock_masters))):
+        stock_master = stock_masters.iloc[i:i + 1]
+        stock_minute_prices = get_stock_minute_prices(stock_master)
+
+        # Make a 1 minute later close a next_close.
+        stock_minute_prices.loc[:, 'next_close'] = stock_minute_prices['close'].shift(-1)
+        # noinspection PyUnresolvedReferences
+        stock_minute_prices.loc[:, 'label'] = (stock_minute_prices['close'] < stock_minute_prices['next_close']).astype(
+            int)
+        stock_minute_prices = stock_minute_prices.drop(columns=['next_close'])
+        # noinspection PyUnresolvedReferences
+        stock_minute_prices = stock_minute_prices.dropna()
+
+        # Merge calculated results of this company to high_frequency_profits.
+        high_frequency_profits = pd.concat([high_frequency_profits, stock_minute_prices])
+
+    # If the current close price is lower than the next close price, a label is 1. Else, a label is 0.
+    # noinspection PyUnresolvedReferences
+    high_frequency_profits.loc[:, 'label'] = (
+            high_frequency_profits['close'] < high_frequency_profits['next_close']).astype(int)
+
+    # Delete next_volatility column.
+    high_frequency_profits = \
+        high_frequency_profits.loc[:, high_frequency_profits.columns != 'next_close']
+
+    return high_frequency_profits
 
 
 if __name__ == '__main__':
     # word_pack = calculate_word_pack()
     # word_pack.to_csv(DATA_DIR + 'word_pack.csv', index=False)
 
-    # titles = calculate_titles()
-    # titles.to_csv(DATA_DIR + 'title.csv')
+    # profit_titles = calculate_profit_titles()
+    # profit_titles.to_csv(DATA_DIR + 'profit_titles.csv')
 
-    quantitative_behaviors = calculate_quantitative_behaviors()
-    quantitative_behaviors.to_csv(DATA_DIR + 'quantitative_behavior.csv')
+    # volatility_titles = calculate_volatility_titles()
+    # volatility_titles.to_csv(DATA_DIR + 'volatility_title.csv')
+
+    # quantitative_behaviors = calculate_quantitative_behaviors()
+    # quantitative_behaviors.to_csv(DATA_DIR + 'quantitative_behavior.csv')
+
+    stock_minute_volatilities = calculate_high_frequency_volatilities()
+    stock_minute_volatilities.to_csv(DATA_DIR + 'high_frequency_volatility.csv')
+
+    # stock_minute_volatilities = calculate_high_frequency_profits()
+    # stock_minute_volatilities.to_csv(DATA_DIR + 'high_frequency_profit.csv')
