@@ -11,11 +11,11 @@ import tensorflow as tf
 
 from word2vec.word_to_vector import run_training
 
-from data_dealer.data_reader import get_titles
+from data_dealer.data_reader import get_profit_titles
 
 
 def data_reader():
-    titles = get_titles()
+    titles = get_profit_titles()
     sentences = [words.split() for words in titles['title'].values]
     targets = titles['label'].tolist()
 

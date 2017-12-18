@@ -4,18 +4,19 @@
 :Date: 2017. 12. 14.
 """
 import collections
+from pathlib import Path
 
 import keras.backend as keras
 import numpy as np
 import pandas as pd
+import progressbar
 import tensorflow as tf
 from gensim.models import Word2Vec
-from keras.layers import Dense, LSTM, Activation, Embedding, Dropout
-from keras.models import Sequential
 from keras import metrics
+from keras.layers import Dense, LSTM, Embedding, Dropout
+from keras.models import Sequential, save_model
 from keras.preprocessing import sequence
 from sklearn.model_selection import train_test_split
-import progressbar
 
 
 # AUC for a binary classifier
@@ -132,37 +133,34 @@ def to_excel(dataframe, dir, file_name):
 
 
 # noinspection PyPep8Naming
-def to_html(test_result, flags):
+def to_html(test_result, file_name, flags, company_name):
     y = test_result['label']
-    predict = test_result['prediction']
+    predict = np.round(test_result['prediction'])
     TP = sum(y * predict)  # 실제 1을 1이라고 예측한것
     TN = sum((y - 1) * (predict - 1))  # 실제 0을 0이라고 예측한것
     FP = -1 * sum((y - 1) * predict)  # 실제 0을 1이라고 예측한것
     FN = -1 * sum(y * (predict - 1))  # 실제 1을 0이라고 예측한것
-    total = TP + TN + FP + FN
-    precision = TP / (TP + FP + 1e-20)  # 1이라고 예측한것 중 실제 1인것의 비중
-    recall = TP / (TP + FN + 1e-20)  # 실제 1인것들 중에서 예측결과가 1인 것의 비중
-    accuracy = (TP + TN) / (TP + TN + FP + FN)  # 정확히 예측(즉, 1을 1이라고, 0을 0이라고 예측)한 것의 비중
+    Precision = TP / (TP + FP + 1e-20)  # 1이라고 예측한것 중 실제 1인것의 비중
+    Recall = TP / (TP + FN + 1e-20)  # 실제 1인것들 중에서 예측결과가 1인 것의 비중
+    Accuracy = (TP + TN) / (TP + TN + FP + FN)  # 정확히 예측(즉, 1을 1이라고, 0을 0이라고 예측)한 것의 비중
+    F1Score = 2 / (1 / Precision + 1 / Recall + 1e-20)  # harmonic mean
 
-    f = open(flags.html_dir + 'test_result_{}_{}_{}_{}_{}_{}'.format(flags.learning_rate,
-                                                                     flags.embedding_size,
-                                                                     flags.batch_size,
-                                                                     flags.num_epochs,
-                                                                     flags.dropout,
-                                                                     flags.hidden_unit), 'w')
+    f = open(flags.html_dir + file_name + '.html', 'w')
 
     html_header = '<!DOCTYPE html>' \
                   '<meta charset="utf-8">' \
                   '<html><body>' \
-                  '<h3>embedding_size={},' \
-                  ' batch_size={},' \
-                  ' num_epochs={},' \
-                  ' dropout={},' \
-                  ' hidden_unit={}</h3>'.format(flags.embedding_size,
-                                                flags.batch_size,
-                                                flags.num_epochs,
-                                                flags.dropout,
-                                                flags.hidden_unit)
+                  '<h3>company_name={},<br>' \
+                  'embedding_size={},<br>' \
+                  'batch_size={},<br>' \
+                  'num_epochs={},<br>' \
+                  'dropout={},<br>' \
+                  'hidden_unit={}</h3>'.format(company_name,
+                                               flags.embedding_size,
+                                               flags.batch_size,
+                                               flags.num_epochs,
+                                               flags.dropout,
+                                               flags.hidden_unit)
     html_table = """
         <style type="text/css">
         .tg  {border-collapse:collapse;border-spacing:0;}
@@ -176,11 +174,12 @@ def to_html(test_result, flags):
         </style>
         <table class="tg">
           <tr>
-            <th class="tg-s6z2" colspan="2" rowspan="2">%d</th>
+            <th class="tg-s6z2" colspan="2" rowspan="1">F1 score</th>
             <th class="tg-431l" colspan="2">Prediction</th>
-            <th class="tg-804w" rowspan="2">Recall</th>
+            <th class="tg-804w" rowspan="3">Recall</th>
           </tr>
           <tr>
+            <td class="tg-baqh" colspan="2">%.4f</td>
             <td class="tg-szxb">0</td>
             <td class="tg-szxb">1</td>
           </tr>
@@ -189,7 +188,6 @@ def to_html(test_result, flags):
             <td class="tg-szxb">0</td>
             <td class="tg-s6z2">%d</td>
             <td class="tg-s6z2">%d</td>
-            <td class="tg-baqh"></td>
           </tr>
           <tr>
             <td class="tg-szxb">1</td>
@@ -198,13 +196,11 @@ def to_html(test_result, flags):
             <td class="tg-baqh">%.4f</td>
           </tr>
           <tr>
-            <td class="tg-804w" colspan="2">Precision</td>
-            <td class="tg-baqh"></td>
+            <td class="tg-804w" colspan="3">Precision</td>
             <td class="tg-baqh">%.4f</td>
             <td class="tg-baqh">%.4f</td>
-          </tr>
         </table>
-    """ % (total, TN, FP, FN, TP, recall, precision, accuracy)
+    """ % (F1Score, TN, FP, FN, TP, Recall, Precision, Accuracy)
     html_footer = '</body></html>'
 
     f.write(html_header)
@@ -277,14 +273,27 @@ def next_test_batch(num, x_test, y_test):
     return x_test, y_test, x_batch, y_batch
 
 
-def run_training(flags, sentences, targets, demonstration=False):
+def run_training(company_name, flags, sentences, targets, demonstration=False):
     """
 
+    :param company_name:
     :param flags:
     :param sentences: (List[List[str]]) A list of words. Words is a list of word.
     :param targets: (List[int]) A list of target, 0 or 1. 0 means a negative profit and 1 means a positive profit.
     :param demonstration:
     """
+
+    file_name = 'test_result_{}_{}_{}_{}_{}_{}_{}'.format(company_name,
+                                                          flags.learning_rate,
+                                                          flags.embedding_size,
+                                                          flags.batch_size,
+                                                          flags.num_epochs,
+                                                          flags.dropout,
+                                                          flags.hidden_unit)
+
+    if Path(flags.html_dir + file_name + '.html').exists():
+        return
+
     max_sentence_length, sentence_number, vocabulary_size = count_sentences(sentences)
     embedding_matrix, index2word, word2index = get_embedding_matrix(sentences, flags.embedding_size)
     x, y = get_x_y(sentences, targets, max_sentence_length, sentence_number, word2index)
@@ -298,6 +307,8 @@ def run_training(flags, sentences, targets, demonstration=False):
     # Teach the model. (x_test, y_test)
     model.fit(x_train, y_train, batch_size=flags.batch_size, epochs=flags.num_epochs,
               validation_data=(x_test, y_test))
+
+    save_model(model, flags.log_dir)
 
     if demonstration:
         while True:
@@ -332,10 +343,6 @@ def run_training(flags, sentences, targets, demonstration=False):
         test_result = evaluate(flags, model, x_test, y_test, index2word)
 
         # Save the test result as an excel file.
-        to_excel(test_result, flags.excel_dir,
-                 'test_result_{}_{}_{}_{}_{}_{}'.format(flags.learning_rate, flags.embedding_size, flags.batch_size,
-                                                        flags.num_epochs,
-                                                        flags.dropout,
-                                                        flags.hidden_unit))
+        to_excel(test_result, flags.excel_dir, file_name)
 
-        to_html(test_result, flags)
+        to_html(test_result, file_name, flags, company_name)
