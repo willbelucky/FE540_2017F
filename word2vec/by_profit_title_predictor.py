@@ -11,13 +11,14 @@ import tensorflow as tf
 
 from word2vec.word_to_vector import run_training
 
-from data_dealer.data_reader import get_titles
+from data_dealer.data_reader import get_profit_titles
+from data_dealer.data_reader import get_stock_masters, get_stock_master
 
 
-def data_reader():
-    titles = get_titles()
-    sentences = [words.split() for words in titles['title'].values]
-    targets = titles['label'].tolist()
+def data_reader(stock_masters=None):
+    profit_titles = get_profit_titles(stock_masters)
+    sentences = [words.split() for words in profit_titles['title'].values]
+    targets = profit_titles['label'].tolist()
 
     return sentences, targets
 
@@ -32,12 +33,25 @@ def main(_):
         tf.gfile.MakeDirs(FLAGS.image_dir)
     if not tf.gfile.Exists(FLAGS.html_dir):
         tf.gfile.MakeDirs(FLAGS.html_dir)
-    sentences, targets = data_reader()
-    run_training(flags=FLAGS, sentences=sentences, targets=targets)
+    if FLAGS.company_codes is None:
+        sentences, targets = data_reader()
+        run_training(company_name='total', flags=FLAGS, sentences=sentences, targets=targets)
+        stock_masters = get_stock_masters()
+        for company_code, values in stock_masters.iterrows():
+            stock_master = get_stock_master(company_code)
+            sentences, targets = data_reader(stock_master)
+            run_training(company_name=values[0], flags=FLAGS, sentences=sentences, targets=targets)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--company_codes',
+        nargs='+',
+        type=str,
+        default=['000660'],
+        help='Codes of companies.'
+    )
     parser.add_argument(
         '--learning_rate',
         type=float,
