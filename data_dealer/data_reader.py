@@ -554,7 +554,7 @@ def get_volatility_titles(stock_masters: DataFrame = None, from_date: datetime =
     return volatility_titles
 
 
-def get_quantitative_behaviors():
+def get_quantitative_behaviors() -> DataFrame:
     """
 
     :return quantitative_behaviors: (DataFrame)
@@ -614,7 +614,7 @@ def get_quantitative_behaviors():
     return quantitative_behaviors
 
 
-def get_high_frequency_volatilities():
+def get_high_frequency_volatilities(stock_masters: DataFrame = None) -> DataFrame:
     """
 
     :return high_frequency_volatilities: (DataFrame)
@@ -629,4 +629,31 @@ def get_high_frequency_volatilities():
                 label           | (float) The next 5 minutes volatility.
     """
     high_frequency_volatilities = _get_high_frequency_volatility_table()
+    if stock_masters is None:
+        high_frequency_volatilities = high_frequency_volatilities.loc[idx[:, :], :]
+    else:
+        high_frequency_volatilities = high_frequency_volatilities.loc[idx[stock_masters.index.values, :], :]
     return high_frequency_volatilities
+
+
+def get_high_frequency_profits(stock_masters: DataFrame = None) -> DataFrame:
+    """
+
+    :return high_frequency_profits: (DataFrame)
+        index   code            | (str) 6 digits number string representing a company.
+                date            | (datetime) The created date.
+        column  volume          | (int) The number of traded stocks of a day.
+                open            | (int) The first price of a day.
+                high            | (int) The highest price of a day.
+                low             | (int) The lowest price of a day.
+                close           | (int) The final price of a day.
+                volatility      | (float) The volatility of 5 minutes.
+                label           | (int) If the current close price is lower than the next close price,
+                                        a label is 1. Else, a label is 0.
+    """
+    high_frequency_profits = _get_high_frequency_profit_table()
+    if stock_masters is None:
+        high_frequency_profits = high_frequency_profits.loc[idx[:, :], :]
+    else:
+        high_frequency_profits = high_frequency_profits.loc[idx[stock_masters.index.values, :], :]
+    return high_frequency_profits
