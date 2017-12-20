@@ -60,13 +60,13 @@ if __name__ == '__main__':
         nargs='+',
         type=str,
         default=[
+            '한국항공우주',
+            '카카오',
             '한국전력',
             '현대백화점',
-            '카카오',
-            '삼성전자',
             '현대차',
             'LG전자',
-            '한국항공우주',
+            # '삼성전자',
         ],
         help='Codes of companies.'
     )
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--dropout',
         type=float,
-        default=None,
+        default=0.5,
         help='The dropout rate, between 0 and 1. E.g. "rate=0.1" would drop out 10% of input units.'
     )
     parser.add_argument(
