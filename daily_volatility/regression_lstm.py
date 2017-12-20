@@ -320,8 +320,8 @@ def run_training(company_name, flags, data_sets):
             ewma_prediction_df = pd.read_hdf(flags.ewma_dir + ewma_file_name, 'table')
             ewma_predictions = ewma_prediction_df['prediction'].tolist()
         else:
-            train = data_sets.train.labels
-            ewma_predictions = ewma(train['close']).tolist()
+            train_labels = data_sets.train.labels
+            ewma_predictions = ewma(train_labels).tolist()
             ewma_prediction_df = pd.DataFrame(ewma_predictions, columns=['prediction'])
             ewma_prediction_df.to_hdf(flags.ewma_dir + ewma_file_name, 'table')
 
