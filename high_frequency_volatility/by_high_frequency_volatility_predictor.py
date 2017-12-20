@@ -53,7 +53,7 @@ def main(_):
             run_training(values[0],
                          flags=FLAGS,
                          data_sets=read_data(company_code=company_code,
-                                             test_start_date=datetime(2017, 10, 29),
+                                             test_start_date=datetime(2017, 8, 1),
                                              shuffle=False))
 
 
@@ -64,13 +64,12 @@ if __name__ == '__main__':
         nargs='+',
         type=str,
         default=[
-            '005930',  # 삼성전자
+            # '005930',  # 삼성전자
             # '005380',  # 현대차
             # '066570',  # LG전자
             # '047810',  # 한국항공우주
             # '015760',  # 한국전력
             # '069960',  # 현대백화점
-            # '035720',  # 카카오
         ],
         help='Codes of companies.'
     )
@@ -89,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=2000,
+        default=1,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
@@ -102,7 +101,7 @@ if __name__ == '__main__':
         '--hidden_units',
         nargs='+',
         type=int,
-        default=[16, 16],
+        default=[1],
         help='Number of units in hidden layers.'
     )
     parser.add_argument(

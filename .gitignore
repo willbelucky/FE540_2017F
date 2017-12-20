@@ -25,3 +25,17 @@ word2vec/excels/
 word2vec/htmls/
 word2vec/images/
 word2vec/logs/
+daily_volatility/arimas/
+daily_volatility/ewmas/
+daily_volatility/excels/
+daily_volatility/htmls/
+daily_volatility/images/
+data_dealer/__pycache__/
+high_frequency_profit/htmls/
+high_frequency_volatility/__pycache__/
+high_frequency_volatility/arimas/
+high_frequency_volatility/ewmas/
+high_frequency_volatility/htmls/
+high_frequency_volatility/images/
+stats/__pycache__/
+util/__pycache__/
