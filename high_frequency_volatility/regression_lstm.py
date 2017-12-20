@@ -292,11 +292,11 @@ def run_training(company_name, flags, data_sets):
         auto_arima = {
             '삼성전자': (2, 1, 0),
             '현대차': (5, 1, 0),
-            'LG전자': (2, 1, 5),
-            '한국항공우주': (5, 1, 5),
-            '한국전력': (3, 1, 4),
-            '현대백화점': (2, 1, 2),
-            '카카오': (0, 1, 1),
+            'LG전자': (2, 1, 0),
+            '한국항공우주': (5, 1, 0),
+            '한국전력': (3, 1, 0),
+            '현대백화점': (2, 1, 0),
+            '카카오': (0, 1, 0),
         }
         if company_name in auto_arima.keys():
             p, d, q = auto_arima[company_name]
@@ -320,7 +320,8 @@ def run_training(company_name, flags, data_sets):
             ewma_prediction_df = pd.read_hdf(flags.ewma_dir + ewma_file_name, 'table')
             ewma_predictions = ewma_prediction_df['prediction'].tolist()
         else:
-            test_prices = pd.Series(data_sets.test.units[:, 0, 3])
+            test_prices = pd.Series(
+                np.append(data_sets.train.units[:, 0, 3][-lambda_window:], data_sets.test.units[:, 0, 3]))
             ewma_predictions = ewma(test_prices).tolist()
             ewma_prediction_df = pd.DataFrame(ewma_predictions, columns=['prediction'])
             ewma_prediction_df.to_hdf(flags.ewma_dir + ewma_file_name, 'table')

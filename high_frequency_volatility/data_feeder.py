@@ -98,6 +98,10 @@ class DataSet(object):
 
     def next_batch(self, shuffle=True):
         """Return the next `batch_size` examples from this data set."""
+
+        assert len(self._units) >= self._batch_size,\
+            'total size: {}, batch size: {}'.format(len(self._units), self._batch_size)
+
         start = self._index_in_epoch
         # Shuffle for the first epoch
         if self._epochs_completed == 0 and start == 0 and shuffle:
