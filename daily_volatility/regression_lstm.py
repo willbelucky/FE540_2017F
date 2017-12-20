@@ -178,12 +178,13 @@ def to_excel(dataframe, dir, file_name):
 def run_training(company_name, flags, data_sets):
     """Train mnist_example for a number of steps."""
 
-    file_name = 'daily_volatility_{}_{}_{}_{}_{}_{}'.format(company_name,
-                                                            flags.learning_rate,
-                                                            flags.dropout,
-                                                            flags.max_steps,
-                                                            flags.time_step,
-                                                            flags.hidden_units)
+    file_name = 'daily_volatility_{}_{}_{}_{}_{}_{}_{}'.format(company_name,
+                                                               flags.learning_rate,
+                                                               flags.dropout,
+                                                               flags.max_steps,
+                                                               flags.time_step,
+                                                               flags.hidden_units,
+                                                               flags.pca_alpha)
 
     # If the result file exists, do not run.
     if Path(flags.image_dir + file_name + '.png').exists():
