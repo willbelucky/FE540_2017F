@@ -362,6 +362,7 @@ def _get_daily_volatility_table() -> DataFrame or None:
                 label                       | (float) The next 5 minutes volatility.
     """
     daily_volatilities = get_cached_table(DAILY_VOLATILITY, index=['company', 'date'], parse_dates=['date'])
+    daily_volatilities = daily_volatilities.dropna()
     return daily_volatilities
 
 
