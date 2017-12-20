@@ -60,20 +60,19 @@ if __name__ == '__main__':
         nargs='+',
         type=str,
         default=[
-            '한국항공우주',
-            '카카오',
             '한국전력',
             '현대백화점',
             '현대차',
             'LG전자',
-            # '삼성전자',
+            '삼성전자',
+            '한국항공우주',
         ],
         help='Codes of companies.'
     )
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.001,
+        default=0.01,
         help='Initial learning rate.'
     )
     parser.add_argument(
@@ -85,20 +84,20 @@ if __name__ == '__main__':
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=1000,
+        default=10000,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
         '--time_step',
         type=int,
-        default=150,
+        default=300,
         help='Number of time window.'
     )
     parser.add_argument(
         '--hidden_units',
         nargs='+',
         type=int,
-        default=[16, 16],
+        default=[256, 256],
         help='Number of units in hidden layers.'
     )
     parser.add_argument(

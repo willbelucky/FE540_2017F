@@ -336,6 +336,7 @@ def run_training(company_name, flags, data_sets):
 
         # calculate a mean error.
         arima_mean_error = mean_squared_error(targets, arima_predictions)
+        ewma_mean_error = mean_squared_error(targets, ewma_predictions)
         lstm_mean_error = mean_squared_error(targets, lstm_predictions)
         martingale_mean_error = mean_squared_error(targets, martingale_predictions)
 
@@ -346,7 +347,7 @@ def run_training(company_name, flags, data_sets):
         ax.plot(dates_feed, martingale_predictions, 'y',
                 label='Martingale, {:.4f}'.format(martingale_mean_error), linewidth=1)
         ax.plot(dates_feed, arima_predictions, 'g', label='ARIMA, {:.4f}'.format(arima_mean_error), linewidth=1)
-        ax.plot(dates_feed, ewma_predictions, 'p', label='EWMA, {:.4f}'.format(arima_mean_error), linewidth=1)
+        ax.plot(dates_feed, ewma_predictions, 'aqua', label='EWMA, {:.4f}'.format(ewma_mean_error), linewidth=1)
         ax.plot(dates_feed, lstm_predictions, 'b', label='LSTM, {:.4f}'.format(lstm_mean_error), linewidth=1)
         ax.legend()
 

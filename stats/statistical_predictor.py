@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from statsmodels.tsa.arima_model import ARIMA
+from numpy.linalg import LinAlgError
 
 from data_dealer.data_reader import get_stock_master, get_high_frequency_volatilities
 
@@ -30,12 +31,16 @@ def ewma(stock_prices: pd.Series, window=1, lambda_window=30, lambda_percent=0.9
 
 def arima(history, targets, p, d, q, company_name=''):
     arima_predictions = list()
+    arima_prediction = 0
     for t in tqdm(range(len(targets)), desc=company_name + ' ARIMA'):
         model = ARIMA(history, order=(p, d, q))
-        model_fit = model.fit(disp=0)
-        output = model_fit.forecast()
-        arima_prediction = output[0][0]
-        arima_predictions.append(arima_prediction)
+        try:
+            model_fit = model.fit(disp=0)
+            output = model_fit.forecast()
+            arima_prediction = output[0][0]
+            arima_predictions.append(arima_prediction)
+        except LinAlgError:
+            arima_predictions.append(arima_prediction)
         observed_value = targets[t]
         history.append(observed_value)
 
