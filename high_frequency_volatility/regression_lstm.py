@@ -345,10 +345,10 @@ def run_training(company_name, flags, data_sets):
         fig, ax = plt.subplots()
         ax.plot(dates_feed, targets, 'k', label='target', linewidth=1)
         ax.plot(dates_feed, martingale_predictions, 'y',
-                label='Martingale, {:.4f}'.format(martingale_mean_error), linewidth=1)
-        ax.plot(dates_feed, arima_predictions, 'g', label='ARIMA, {:.4f}'.format(arima_mean_error), linewidth=1)
-        ax.plot(dates_feed, ewma_predictions, 'aqua', label='EWMA, {:.4f}'.format(ewma_mean_error), linewidth=1)
-        ax.plot(dates_feed, lstm_predictions, 'b', label='LSTM, {:.4f}'.format(lstm_mean_error), linewidth=1)
+                label='Martingale, {:.8f}'.format(martingale_mean_error), linewidth=1)
+        ax.plot(dates_feed, arima_predictions, 'g', label='ARIMA, {:.8f}'.format(arima_mean_error), linewidth=1)
+        ax.plot(dates_feed, ewma_predictions, 'aqua', label='EWMA, {:.8f}'.format(ewma_mean_error), linewidth=1)
+        ax.plot(dates_feed, lstm_predictions, 'b', label='LSTM, {:.8f}'.format(lstm_mean_error), linewidth=1)
         ax.legend()
 
         plt.title(company_name)

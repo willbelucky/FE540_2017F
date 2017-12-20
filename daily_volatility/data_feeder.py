@@ -18,6 +18,7 @@ from tensorflow.python.framework import random_seed
 from tqdm import tqdm
 
 from data_dealer.data_reader import get_daily_volatilities
+from stats.dimension_shrinker import pca
 
 DATASETS = collections.namedtuple('Datasets', ['train', 'test', 'column_number', 'class_number', 'batch_size'])
 
@@ -177,6 +178,7 @@ def dataframe_to_recurrent_ndarray(x, time_step, company_name):
 # noinspection PyUnresolvedReferences
 def read_data(company_name,
               test_start_date=datetime(2016, 2, 10),
+              pca_alpha=0.95,
               shuffle=True,
               dtype=dtypes.float32,
               seed=None):
@@ -186,6 +188,9 @@ def read_data(company_name,
 
     if shuffle:
         daily_volatilities = daily_volatilities.sample(frac=1)
+
+    if pca_alpha is not None:
+        daily_volatilities = pca(daily_volatilities, pca_alpha)
 
     column_number = len(daily_volatilities.columns) - 1
     units = daily_volatilities.loc[:, daily_volatilities.columns != 'label']

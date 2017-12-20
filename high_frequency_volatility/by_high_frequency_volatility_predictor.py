@@ -76,7 +76,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.001,
+        default=0.01,
         help='Initial learning rate.'
     )
     parser.add_argument(
@@ -88,20 +88,20 @@ if __name__ == '__main__':
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=1,
+        default=1000,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
         '--time_step',
         type=int,
-        default=1,
+        default=1500,
         help='Number of time window.'
     )
     parser.add_argument(
         '--hidden_units',
         nargs='+',
         type=int,
-        default=[1],
+        default=[256, 256],
         help='Number of units in hidden layers.'
     )
     parser.add_argument(

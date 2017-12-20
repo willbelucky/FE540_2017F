@@ -41,6 +41,7 @@ def main(_):
                 run_training(values[0],
                              flags=FLAGS,
                              data_sets=read_data(company_name=values[0],
+                                                 pca_alpha=FLAGS.pca_alpha,
                                                  shuffle=False))
             except AssertionError as ae:
                 print(ae)
@@ -50,6 +51,7 @@ def main(_):
             run_training(company_name,
                          flags=FLAGS,
                          data_sets=read_data(company_name=company_name,
+                                             pca_alpha=FLAGS.pca_alpha,
                                              shuffle=False))
 
 
@@ -80,6 +82,12 @@ if __name__ == '__main__':
         type=float,
         default=0.5,
         help='The dropout rate, between 0 and 1. E.g. "rate=0.1" would drop out 10% of input units.'
+    )
+    parser.add_argument(
+        '--pca_alpha',
+        type=float,
+        default=0.95,
+        help='PCA alpha. If pca_alpha is None, do not apply PCA.'
     )
     parser.add_argument(
         '--max_steps',
