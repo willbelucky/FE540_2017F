@@ -294,6 +294,7 @@ def calculate_high_frequency_volatilities():
                 high            | (int) The highest price of a day.
                 low             | (int) The lowest price of a day.
                 close           | (int) The final price of a day.
+                profit          | (float) The log return.
                 volatility      | (float) The volatility of 5 minutes.
                 label           | (float) The next 5 minutes volatility.
     """
@@ -304,12 +305,14 @@ def calculate_high_frequency_volatilities():
         stock_minute_prices = get_stock_minute_prices(stock_master)
 
         # Calculate 5 minutes volatility.
-        stock_minute_prices.loc[:, 'volatility'] = stock_minute_prices['close'].rolling(window=5).std()
+        stock_minute_prices.loc[:, 'profit'] = \
+            np.log(stock_minute_prices['close'] / stock_minute_prices['close'].shift(1))
+        stock_minute_prices.loc[:, 'volatility'] = stock_minute_prices['profit'].rolling(window=5).std()
 
         # Make a 5 minutes later volatility a next_volatility and set it to label.
         stock_minute_prices.loc[:, 'label'] = stock_minute_prices['volatility'].shift(-1)
 
-        # Drop first 4 rows and last 5 rows.
+        # Drop nan rows.
         stock_minute_prices = stock_minute_prices.dropna()
 
         # Merge calculated results of this company to high_frequency_volatilities.
@@ -329,6 +332,8 @@ def calculate_high_frequency_profits():
                 high            | (int) The highest price of a day.
                 low             | (int) The lowest price of a day.
                 close           | (int) The final price of a day.
+                profit          | (float) The log return.
+                volatility      | (float) The volatility of 5 minutes.
                 label           | (int) If the current close price is lower than the next close price,
                                         a label is 1. Else, a label is 0.
     """
@@ -339,7 +344,9 @@ def calculate_high_frequency_profits():
         stock_minute_prices = get_stock_minute_prices(stock_master)
 
         # Calculate 5 minutes volatility.
-        stock_minute_prices.loc[:, 'volatility'] = stock_minute_prices['close'].rolling(window=5).std()
+        stock_minute_prices.loc[:, 'profit'] = \
+            np.log(stock_minute_prices['close'] / stock_minute_prices['close'].shift(1))
+        stock_minute_prices.loc[:, 'volatility'] = stock_minute_prices['profit'].rolling(window=5).std()
 
         # Make a 1 minute later close a next_close.
         stock_minute_prices.loc[:, 'next_close'] = stock_minute_prices['close'].shift(-1)
@@ -369,8 +376,21 @@ if __name__ == '__main__':
     # quantitative_behaviors = calculate_quantitative_behaviors()
     # quantitative_behaviors.to_csv(DATA_DIR + 'quantitative_behavior.csv')
 
-    stock_minute_volatilities = calculate_high_frequency_volatilities()
-    stock_minute_volatilities.to_csv(DATA_DIR + 'high_frequency_volatility.csv')
+    # stock_minute_volatilities = calculate_high_frequency_volatilities()
+    # stock_minute_volatilities.to_csv(DATA_DIR + 'high_frequency_volatility.csv')
 
-    # stock_minute_volatilities = calculate_high_frequency_profits()
-    # stock_minute_volatilities.to_csv(DATA_DIR + 'high_frequency_profit.csv')
+    # codes = [
+    #     '005930',  # 삼성전자
+    #     '005380',  # 현대차
+    #     '066570',  # LG전자
+    #     '047810',  # 한국항공우주
+    #     '015760',  # 한국전력
+    #     '069960',  # 현대백화점
+    #     '035720',  # 카카오
+    # ]
+    # for code in codes:
+    #     stock_minute_volatilities = calculate_high_frequency_volatilities(code)
+    #     stock_minute_volatilities.to_csv(DATA_DIR + 'high_frequency_volatility_{}.csv'.format(code))
+
+    stock_minute_volatilities = calculate_high_frequency_profits()
+    stock_minute_volatilities.to_csv(DATA_DIR + 'high_frequency_profit.csv')

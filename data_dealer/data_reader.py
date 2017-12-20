@@ -25,6 +25,7 @@ WORD_PACK_TABLE = 'word_pack'
 QUANTITATIVE_BEHAVIOR_TABLE = 'quantitative_behavior'
 HIGH_FREQUENCY_VOLATILITY = 'high_frequency_volatility'
 HIGH_FREQUENCY_PROFIT = 'high_frequency_profit'
+DAILY_VOLATILITY = 'daily_volatility'
 
 CACHE = {
     STOCK_MASTER_TABLE: None,
@@ -39,6 +40,7 @@ CACHE = {
     QUANTITATIVE_BEHAVIOR_TABLE: None,
     HIGH_FREQUENCY_VOLATILITY: None,
     HIGH_FREQUENCY_PROFIT: None,
+    DAILY_VOLATILITY: None,
 }
 
 # Set your working directory FE540_2017F.
@@ -310,6 +312,7 @@ def _get_high_frequency_volatility_table() -> DataFrame or None:
                 high            | (int) The highest price of a day.
                 low             | (int) The lowest price of a day.
                 close           | (int) The final price of a day.
+                profit          | (float) The log return.
                 volatility      | (float) The volatility of 5 minutes.
                 label           | (float) The next 5 minutes volatility.
     """
@@ -329,12 +332,37 @@ def _get_high_frequency_profit_table() -> DataFrame or None:
                 high            | (int) The highest price of a day.
                 low             | (int) The lowest price of a day.
                 close           | (int) The final price of a day.
+                profit          | (float) The log return.
+                volatility      | (float) The volatility of 5 minutes.
                 label           | (int) If the current close price is lower than the next close price,
                                         a label is 1. Else, a label is 0.
     """
     high_frequency_profits = get_cached_table(HIGH_FREQUENCY_PROFIT, index=['code', 'date'],
                                               parse_dates=['date'])
     return high_frequency_profits
+
+
+def _get_daily_volatility_table() -> DataFrame or None:
+    """
+
+    :return daily_volatilities: (DataFrame)
+        index   company                     | (str) The name of company.
+                date                        | (datetime) The created date.
+        column  PER                         | (float)
+                PBR                         | (float)
+                PSR                         | (float)
+                close                       | (int) The final price of a day.
+                profit                      | (float)
+                volume                      | (int)
+                short_sales                 | (int)
+                institutional_net_buying    | (int)
+                personal_net_buying         | (int)
+                foreign_net_buying          | (int)
+                volatility                  | (float) The volatility of 5 minutes.
+                label                       | (float) The next 5 minutes volatility.
+    """
+    daily_volatilities = get_cached_table(DAILY_VOLATILITY, index=['company', 'date'], parse_dates=['date'])
+    return daily_volatilities
 
 
 def get_stock_master(code: str) -> DataFrame:
@@ -625,6 +653,7 @@ def get_high_frequency_volatilities(stock_masters: DataFrame = None) -> DataFram
                 high            | (int) The highest price of a day.
                 low             | (int) The lowest price of a day.
                 close           | (int) The final price of a day.
+                profit          | (float) The log return.
                 volatility      | (float) The volatility of 5 minutes.
                 label           | (float) The next 5 minutes volatility.
     """
@@ -647,6 +676,7 @@ def get_high_frequency_profits(stock_masters: DataFrame = None) -> DataFrame:
                 high            | (int) The highest price of a day.
                 low             | (int) The lowest price of a day.
                 close           | (int) The final price of a day.
+                profit          | (float) The log return.
                 volatility      | (float) The volatility of 5 minutes.
                 label           | (int) If the current close price is lower than the next close price,
                                         a label is 1. Else, a label is 0.
@@ -657,3 +687,30 @@ def get_high_frequency_profits(stock_masters: DataFrame = None) -> DataFrame:
     else:
         high_frequency_profits = high_frequency_profits.loc[idx[stock_masters.index.values, :], :]
     return high_frequency_profits
+
+
+def get_daily_volatilities(company_name: str) -> DataFrame:
+    """
+
+    :return daily_volatilities: (DataFrame)
+        index   company                     | (str) The name of company.
+                date                        | (datetime) The created date.
+        column  PER                         | (float)
+                PBR                         | (float)
+                PSR                         | (float)
+                close                       | (int) The final price of a day.
+                profit                      | (float)
+                volume                      | (int)
+                short_sales                 | (int)
+                institutional_net_buying    | (int)
+                personal_net_buying         | (int)
+                foreign_net_buying          | (int)
+                volatility                  | (float) The volatility of 5 minutes.
+                label                       | (float) The next 5 minutes volatility.
+    """
+    daily_volatilities = _get_daily_volatility_table()
+    if company_name is None:
+        daily_volatilities = daily_volatilities.loc[idx[:, :], :]
+    else:
+        daily_volatilities = daily_volatilities.loc[idx[company_name, :], :]
+    return daily_volatilities

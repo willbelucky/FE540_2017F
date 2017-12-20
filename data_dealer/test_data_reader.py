@@ -107,17 +107,17 @@ class TestDataReader(TestCase):
     def test_get_high_frequency_volatility_table(self):
         high_frequency_volatilities = _get_high_frequency_volatility_table()
         self.assertIsNotNone(high_frequency_volatilities)
-        self.assertEqual(46977483, len(high_frequency_volatilities))
+        self.assertEqual(46976733, len(high_frequency_volatilities))
         testing.assert_array_equal(['code', 'date'], high_frequency_volatilities.index.names)
-        testing.assert_array_equal(['open', 'high', 'low', 'close', 'volume', 'volatility', 'label'],
+        testing.assert_array_equal(['open', 'high', 'low', 'close', 'volume', 'profit', 'volatility', 'label'],
                                    high_frequency_volatilities.columns.values)
 
     def test_get_high_frequency_profit_table(self):
         high_frequency_profits = _get_high_frequency_profit_table()
         self.assertIsNotNone(high_frequency_profits)
-        self.assertEqual(46978233, len(high_frequency_profits))
+        self.assertEqual(46977483, len(high_frequency_profits))
         testing.assert_array_equal(['code', 'date'], high_frequency_profits.index.names)
-        testing.assert_array_equal(['open', 'high', 'low', 'close', 'volume', 'volatility', 'label'],
+        testing.assert_array_equal(['open', 'high', 'low', 'close', 'volume', 'profit', 'volatility', 'label'],
                                    high_frequency_profits.columns.values)
 
     def test_get_stock_master(self):
