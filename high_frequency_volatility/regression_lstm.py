@@ -178,12 +178,12 @@ def to_excel(dataframe, dir, file_name):
 def run_training(company_name, flags, data_sets):
     """Train mnist_example for a number of steps."""
 
-    file_name = 'test_result_{}_{}_{}_{}_{}_{}'.format(company_name,
-                                                       flags.learning_rate,
-                                                       flags.dropout,
-                                                       flags.max_steps,
-                                                       flags.time_step,
-                                                       flags.hidden_units)
+    file_name = 'high_frequency_volatility_{}_{}_{}_{}_{}_{}'.format(company_name,
+                                                                     flags.learning_rate,
+                                                                     flags.dropout,
+                                                                     flags.max_steps,
+                                                                     flags.time_step,
+                                                                     flags.hidden_units)
 
     # If the result file exists, do not run.
     if Path(flags.image_dir + file_name + '.png').exists():
@@ -320,8 +320,8 @@ def run_training(company_name, flags, data_sets):
             ewma_prediction_df = pd.read_hdf(flags.ewma_dir + ewma_file_name, 'table')
             ewma_predictions = ewma_prediction_df['prediction'].tolist()
         else:
-            train = data_sets.train.labels
-            ewma_predictions = ewma(train['close']).tolist()
+            test_prices = pd.Series(data_sets.test.units[:, 0, 3])
+            ewma_predictions = ewma(test_prices).tolist()
             ewma_prediction_df = pd.DataFrame(ewma_predictions, columns=['prediction'])
             ewma_prediction_df.to_hdf(flags.ewma_dir + ewma_file_name, 'table')
 

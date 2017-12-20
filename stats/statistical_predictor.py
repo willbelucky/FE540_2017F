@@ -12,17 +12,17 @@ from statsmodels.tsa.arima_model import ARIMA
 from data_dealer.data_reader import get_stock_master, get_high_frequency_volatilities
 
 
-def ewma(stock_prices, window=1, lambda_window=30, lambda_percent=0.94):
+def ewma(stock_prices: pd.Series, window=1, lambda_window=30, lambda_percent=0.94):
     print('Start EWMA...')
 
-    profit_log = np.log(stock_prices / stock_prices.shift(window))
-    squared_profit_log = profit_log ** 2
-    squared_profit_log = squared_profit_log.dropna()
+    log_profit = np.log(stock_prices / stock_prices.shift(window))
+    squared_log_profit = log_profit ** 2
+    squared_log_profit = squared_log_profit.dropna()
     powers = np.arange(lambda_window)
     weights = (1 - lambda_percent) * (lambda_percent ** powers)
 
-    smas = pd.np.convolve(squared_profit_log, weights, 'valid')
-    return_series = pd.Series(smas, index=squared_profit_log.index[len(weights) - window:])
+    smas = pd.np.convolve(squared_log_profit, weights, 'valid')
+    return_series = pd.Series(smas, index=squared_log_profit.index[len(powers) - window:])
 
     print('EWMA is done!!')
     return return_series
@@ -34,7 +34,7 @@ def arima(history, targets, p, d, q, company_name=''):
         model = ARIMA(history, order=(p, d, q))
         model_fit = model.fit(disp=0)
         output = model_fit.forecast()
-        arima_prediction = output[0]
+        arima_prediction = output[0][0]
         arima_predictions.append(arima_prediction)
         observed_value = targets[t]
         history.append(observed_value)

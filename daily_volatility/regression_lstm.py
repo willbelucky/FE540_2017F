@@ -320,8 +320,9 @@ def run_training(company_name, flags, data_sets):
             ewma_prediction_df = pd.read_hdf(flags.ewma_dir + ewma_file_name, 'table')
             ewma_predictions = ewma_prediction_df['prediction'].tolist()
         else:
-            train_labels = data_sets.train.labels
-            ewma_predictions = ewma(train_labels).tolist()
+            test_prices = pd.Series(
+                np.append(data_sets.train.units[:, 0, 3][-lambda_window:], data_sets.test.units[:, 0, 3]))
+            ewma_predictions = ewma(test_prices).tolist()
             ewma_prediction_df = pd.DataFrame(ewma_predictions, columns=['prediction'])
             ewma_prediction_df.to_hdf(flags.ewma_dir + ewma_file_name, 'table')
 

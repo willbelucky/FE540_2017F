@@ -60,13 +60,13 @@ if __name__ == '__main__':
         nargs='+',
         type=str,
         default=[
+            '한국전력',
+            '현대백화점',
+            '카카오',
             '삼성전자',
-            # '현대차',
-            # 'LG전자',
-            # '한국항공우주',
-            # '한국전력',
-            # '현대백화점',
-            # '카카오',
+            '현대차',
+            'LG전자',
+            '한국항공우주',
         ],
         help='Codes of companies.'
     )
@@ -85,13 +85,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=200,
+        default=1000,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
         '--time_step',
         type=int,
-        default=500,
+        default=150,
         help='Number of time window.'
     )
     parser.add_argument(
