@@ -323,6 +323,9 @@ def run_training(company_name, flags, data_sets):
         lstm_predictions = sess.run(logits, feed_dict)
 
         # CNN plot
+        cnn_file_name = 'cnn_{}.csv'.format(company_name)
+        cnn_predictions_df = pd.read_csv(flags.cnn_dir + cnn_file_name, low_memory=False)
+        cnn_predictions = cnn_predictions_df['prediction'].tolist()
 
         # Martingale plot
         martingale_predictions = np.concatenate((data_sets.train.labels[-1:], data_sets.test.labels[:-1]), axis=0)
@@ -332,6 +335,7 @@ def run_training(company_name, flags, data_sets):
         ewma_mean_error = mean_squared_error(targets, ewma_predictions)
         lstm_mean_error = mean_squared_error(targets, lstm_predictions)
         martingale_mean_error = mean_squared_error(targets, martingale_predictions)
+        cnn_mean_error = mean_squared_error(targets, cnn_predictions)
 
         # draw a test graph
         matplotlib.rc('font', family='NanumBarunGothicOTF')
@@ -342,11 +346,12 @@ def run_training(company_name, flags, data_sets):
         ax.plot(dates_feed, arima_predictions, 'g', label='ARIMA, {:.4e}'.format(arima_mean_error), linewidth=1)
         ax.plot(dates_feed, ewma_predictions, 'aqua', label='EWMA, {:.4e}'.format(ewma_mean_error), linewidth=1)
         ax.plot(dates_feed, lstm_predictions, 'b', label='LSTM, {:.4e}'.format(lstm_mean_error), linewidth=1)
+        ax.plot(dates_feed, cnn_predictions, 'r', label='CNN, {:.4e}'.format(cnn_mean_error), linewidth=1)
         ax.legend()
 
         plt.title(company_name)
         plt.xlabel('date')
-        plt.ylabel('MSE')
+        plt.ylabel('volatility')
         plt.savefig(flags.image_dir + file_name + '.png', dpi=1200)
         plt.close()
 

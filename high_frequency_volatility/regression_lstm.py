@@ -345,7 +345,7 @@ def run_training(company_name, flags, data_sets):
 
         plt.title(company_name)
         plt.xlabel('date')
-        plt.ylabel('MSE')
+        plt.ylabel('volatility')
         plt.savefig(flags.image_dir + file_name + '.png', dpi=1200)
         plt.close()
 

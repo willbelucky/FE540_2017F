@@ -30,6 +30,8 @@ def main(_):
         tf.gfile.MakeDirs(FLAGS.html_dir)
     if not tf.gfile.Exists(FLAGS.arima_dir):
         tf.gfile.MakeDirs(FLAGS.arima_dir)
+    if not tf.gfile.Exists(FLAGS.cnn_dir):
+        raise FileNotFoundError('cnns folder is not exist!')
 
     if FLAGS.company_names is None:
         stock_masters = get_stock_masters()
@@ -128,6 +130,12 @@ if __name__ == '__main__':
         '--arima_dir',
         type=str,
         default=os.path.join(os.getcwd(), FOLDER_DIR + 'arimas/'),
+        help='Directory to put the arima file.'
+    )
+    parser.add_argument(
+        '--cnn_dir',
+        type=str,
+        default=os.path.join(os.getcwd(), FOLDER_DIR + 'cnns/'),
         help='Directory to put the arima file.'
     )
     parser.add_argument(
