@@ -313,10 +313,10 @@ def run_training(company_name, flags, data_sets):
             arima_prediction_df.to_hdf(flags.arima_dir + arima_file_name, 'table')
 
         # EWMA plot
-        lambda_window = 30
-        lambda_percent = 0.94
-        volatilities = pd.Series(data_sets.volatilities[len(data_sets.train.labels) - lambda_window + 2:])
-        ewma_predictions = ewma(volatilities, lambda_window, lambda_percent).tolist()
+        # lambda_window = 30
+        # lambda_percent = 0.94
+        # volatilities = pd.Series(data_sets.volatilities[len(data_sets.train.labels) - lambda_window + 2:])
+        # ewma_predictions = ewma(volatilities, lambda_window, lambda_percent).tolist()
 
         # LSTM plot
         lstm_predictions = sess.run(logits, feed_dict)
@@ -328,7 +328,7 @@ def run_training(company_name, flags, data_sets):
 
         # calculate a mean error.
         arima_mean_error = mean_squared_error(targets, arima_predictions)
-        ewma_mean_error = mean_squared_error(targets, ewma_predictions)
+        # ewma_mean_error = mean_squared_error(targets, ewma_predictions)
         lstm_mean_error = mean_squared_error(targets, lstm_predictions)
         martingale_mean_error = mean_squared_error(targets, martingale_predictions)
 
@@ -339,7 +339,7 @@ def run_training(company_name, flags, data_sets):
         ax.plot(dates_feed, martingale_predictions, 'y',
                 label='Martingale, {:.4e}'.format(martingale_mean_error), linewidth=1)
         ax.plot(dates_feed, arima_predictions, 'g', label='ARIMA, {:.4e}'.format(arima_mean_error), linewidth=1)
-        ax.plot(dates_feed, ewma_predictions, 'aqua', label='EWMA, {:.4e}'.format(ewma_mean_error), linewidth=1)
+        # ax.plot(dates_feed, ewma_predictions, 'aqua', label='EWMA, {:.4e}'.format(ewma_mean_error), linewidth=1)
         ax.plot(dates_feed, lstm_predictions, 'b', label='LSTM, {:.4e}'.format(lstm_mean_error), linewidth=1)
         ax.legend()
 

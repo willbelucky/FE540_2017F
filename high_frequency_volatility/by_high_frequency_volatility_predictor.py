@@ -64,12 +64,12 @@ if __name__ == '__main__':
         nargs='+',
         type=str,
         default=[
-            # '005930',  # 삼성전자
-            # '005380',  # 현대차
-            # '066570',  # LG전자
-            # '047810',  # 한국항공우주
-            # '015760',  # 한국전력
-            # '069960',  # 현대백화점
+            '005930',  # 삼성전자
+            '005380',  # 현대차
+            '066570',  # LG전자
+            '047810',  # 한국항공우주
+            '015760',  # 한국전력
+            '069960',  # 현대백화점
         ],
         help='Codes of companies.'
     )
@@ -94,14 +94,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--time_step',
         type=int,
-        default=500,
+        default=5,
         help='Number of time window.'
     )
     parser.add_argument(
         '--hidden_units',
         nargs='+',
         type=int,
-        default=[256, 256],
+        default=[16, 16],
         help='Number of units in hidden layers.'
     )
     parser.add_argument(

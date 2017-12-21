@@ -20,7 +20,7 @@ from tqdm import tqdm
 from data_dealer.data_reader import get_stock_master, get_high_frequency_volatilities
 
 DATASETS = collections.namedtuple('Datasets',
-                                  ['train', 'test', 'volatilities', 'column_number', 'class_number', 'batch_size'])
+                                  ['train', 'test', 'column_number', 'class_number', 'batch_size'])
 
 
 class DataSet(object):
@@ -159,7 +159,7 @@ def to_recurrent_data(data_sets, time_step, company_name):
     train = DataSet(units[:train_size], labels[:train_size], dates[:train_size], **options)
     test = DataSet(units[train_size:], labels[train_size:], dates[train_size:], **options)
 
-    return DATASETS(train=train, test=test, column_number=data_sets.column_number, volatilities=data_sets.volatilities,
+    return DATASETS(train=train, test=test, column_number=data_sets.column_number,
                     class_number=data_sets.class_number, batch_size=data_sets.batch_size)
 
 
@@ -195,7 +195,6 @@ def read_data(company_code,
     high_frequency_volatilities = high_frequency_volatilities.reset_index()
     labels = high_frequency_volatilities.loc[:, ['label']]
     dates = high_frequency_volatilities.loc[:, ['date']]
-    volatilities = daily_volatilities['volatility']
 
     train_units = units[high_frequency_volatilities['date'] < test_start_date]
     train_labels = labels[high_frequency_volatilities['date'] < test_start_date]['label']
@@ -211,5 +210,5 @@ def read_data(company_code,
     train = DataSet(train_units, train_labels, train_dates, **options)
     test = DataSet(test_units, test_labels, test_dates, **options)
 
-    return DATASETS(train=train, test=test, volatilities=volatilities, column_number=column_number, class_number=1,
+    return DATASETS(train=train, test=test, column_number=column_number, class_number=1,
                     batch_size=len(test_units))
