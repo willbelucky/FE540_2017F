@@ -13,19 +13,14 @@ from numpy.linalg import LinAlgError
 from data_dealer.data_reader import get_stock_master, get_high_frequency_volatilities
 
 
-def ewma(stock_prices: pd.Series, window=1, lambda_window=30, lambda_percent=0.94):
-    print('Start EWMA...')
+def ewma(volatilities: pd.Series, lambda_window=30, lambda_percent=0.94):
 
-    log_profit = np.log(stock_prices / stock_prices.shift(window))
-    squared_log_profit = log_profit ** 2
-    squared_log_profit = squared_log_profit.dropna()
     powers = np.arange(lambda_window)
     weights = (1 - lambda_percent) * (lambda_percent ** powers)
 
-    smas = pd.np.convolve(squared_log_profit, weights, 'valid')
-    return_series = pd.Series(smas, index=squared_log_profit.index[len(powers) - window:])
+    smas = pd.np.convolve(volatilities, weights, 'valid')[1:]
+    return_series = pd.Series(smas, index=volatilities.index[len(powers):])
 
-    print('EWMA is done!!')
     return return_series
 
 

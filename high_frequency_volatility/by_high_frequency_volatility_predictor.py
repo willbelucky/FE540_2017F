@@ -76,7 +76,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.01,
+        default=0.001,
         help='Initial learning rate.'
     )
     parser.add_argument(
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--time_step',
         type=int,
-        default=1500,
+        default=500,
         help='Number of time window.'
     )
     parser.add_argument(

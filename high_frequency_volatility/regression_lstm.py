@@ -315,16 +315,8 @@ def run_training(company_name, flags, data_sets):
         # EWMA plot
         lambda_window = 30
         lambda_percent = 0.94
-        ewma_file_name = 'ewma_{}_{}_{}.h5'.format(company_name, lambda_window, lambda_percent)
-        if Path(flags.ewma_dir + ewma_file_name).exists():
-            ewma_prediction_df = pd.read_hdf(flags.ewma_dir + ewma_file_name, 'table')
-            ewma_predictions = ewma_prediction_df['prediction'].tolist()
-        else:
-            test_prices = pd.Series(
-                np.append(data_sets.train.units[:, 0, 3][-lambda_window:], data_sets.test.units[:, 0, 3]))
-            ewma_predictions = ewma(test_prices).tolist()
-            ewma_prediction_df = pd.DataFrame(ewma_predictions, columns=['prediction'])
-            ewma_prediction_df.to_hdf(flags.ewma_dir + ewma_file_name, 'table')
+        volatilities = pd.Series(data_sets.volatilities[len(data_sets.train.labels) - lambda_window + 2:])
+        ewma_predictions = ewma(volatilities, lambda_window, lambda_percent).tolist()
 
         # LSTM plot
         lstm_predictions = sess.run(logits, feed_dict)
@@ -345,16 +337,16 @@ def run_training(company_name, flags, data_sets):
         fig, ax = plt.subplots()
         ax.plot(dates_feed, targets, 'k', label='target', linewidth=1)
         ax.plot(dates_feed, martingale_predictions, 'y',
-                label='Martingale, {:.8f}'.format(martingale_mean_error), linewidth=1)
-        ax.plot(dates_feed, arima_predictions, 'g', label='ARIMA, {:.8f}'.format(arima_mean_error), linewidth=1)
-        ax.plot(dates_feed, ewma_predictions, 'aqua', label='EWMA, {:.8f}'.format(ewma_mean_error), linewidth=1)
-        ax.plot(dates_feed, lstm_predictions, 'b', label='LSTM, {:.8f}'.format(lstm_mean_error), linewidth=1)
+                label='Martingale, {:.4e}'.format(martingale_mean_error), linewidth=1)
+        ax.plot(dates_feed, arima_predictions, 'g', label='ARIMA, {:.4e}'.format(arima_mean_error), linewidth=1)
+        ax.plot(dates_feed, ewma_predictions, 'aqua', label='EWMA, {:.4e}'.format(ewma_mean_error), linewidth=1)
+        ax.plot(dates_feed, lstm_predictions, 'b', label='LSTM, {:.4e}'.format(lstm_mean_error), linewidth=1)
         ax.legend()
 
         plt.title(company_name)
         plt.xlabel('date')
         plt.ylabel('MSE')
-        plt.savefig(flags.image_dir + file_name + '.png')
+        plt.savefig(flags.image_dir + file_name + '.png', dpi=1200)
         plt.close()
 
         # Send a notice message to telegram.

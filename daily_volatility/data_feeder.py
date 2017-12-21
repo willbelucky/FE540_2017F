@@ -20,7 +20,8 @@ from tqdm import tqdm
 from data_dealer.data_reader import get_daily_volatilities
 from stats.dimension_shrinker import pca
 
-DATASETS = collections.namedtuple('Datasets', ['train', 'test', 'column_number', 'class_number', 'batch_size'])
+DATASETS = collections.namedtuple('Datasets', ['train', 'test', 'volatilities', 'column_number', 'class_number',
+                                               'batch_size'])
 
 
 class DataSet(object):
@@ -100,7 +101,7 @@ class DataSet(object):
     def next_batch(self, shuffle=True):
         """Return the next `batch_size` examples from this data set."""
 
-        assert len(self._units) >= self._batch_size,\
+        assert len(self._units) >= self._batch_size, \
             'total size: {}, batch size: {}'.format(len(self._units), self._batch_size)
 
         start = self._index_in_epoch
@@ -159,7 +160,7 @@ def to_recurrent_data(data_sets, time_step, company_name):
     train = DataSet(units[:train_size], labels[:train_size], dates[:train_size], **options)
     test = DataSet(units[train_size:], labels[train_size:], dates[train_size:], **options)
 
-    return DATASETS(train=train, test=test, column_number=data_sets.column_number,
+    return DATASETS(train=train, test=test, column_number=data_sets.column_number, volatilities=data_sets.volatilities,
                     class_number=data_sets.class_number, batch_size=data_sets.batch_size)
 
 
@@ -198,6 +199,7 @@ def read_data(company_name,
     daily_volatilities = daily_volatilities.reset_index()
     labels = daily_volatilities.loc[:, ['label']]
     dates = daily_volatilities.loc[:, ['date']]
+    volatilities = daily_volatilities['volatility']
 
     train_units = units[daily_volatilities['date'] < test_start_date]
     train_labels = labels[daily_volatilities['date'] < test_start_date]['label']
@@ -211,4 +213,5 @@ def read_data(company_name,
     train = DataSet(train_units, train_labels, train_dates, **options)
     test = DataSet(test_units, test_labels, test_dates, **options)
 
-    return DATASETS(train=train, test=test, column_number=column_number, class_number=1, batch_size=len(test_units))
+    return DATASETS(train=train, test=test, volatilities=volatilities, column_number=column_number, class_number=1,
+                    batch_size=len(test_units))
